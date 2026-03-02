@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// 👤 USUÁRIOS
+// ============================================================
+
+model usuarios {
+  id_usuario   Int       @id @default(autoincrement())
+  login        String    @unique(map: "login") @db.VarChar(100)
+  senha        String    @db.VarChar(255)
+  nivel_acesso Int       @default(1)
+  data_criacao DateTime? @default(now()) @db.Timestamp(0)
+}
+
+// ============================================================
+// 📚 LIVROS, CAPÍTULOS E BLOCOS DE TEXTO
+// ============================================================
+
+model livros {
+  id              Int         @id @default(autoincrement())
+  titulo          String      @db.VarChar(255)
+  sinopse         String?     @db.Text
+  data_publicacao DateTime?   @db.Date
+  ordem_serie     Int?
+
+  capitulos       capitulos[]
+}
+
+model capitulos {
+  id       Int     @id @default(autoincrement())
+  livro_id Int
+  numero   Int
+  titulo   String? @db.VarChar(255)
+
+  livros                livros                  @relation(fields: [livro_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "capitulos_ibfk_1")
+  blocos_texto          blocos_texto[]
+  personagem_progressao personagem_progressao[]
+
+  @@index([livro_id], map: "livro_id")
+}
+
+model blocos_texto {
+  id          BigInt             @id @default(autoincrement())
+  capitulo_id Int
+  ordem       Int
+  tipo        blocos_texto_tipo? @default(paragrafo)
+  conteudo    String             @db.Text
+
+  capitulos capitulos @relation(fields: [capitulo_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "blocos_texto_ibfk_1")
+
+  @@index([capitulo_id], map: "capitulo_id")
+}
+
+enum blocos_texto_tipo {
+  paragrafo
+  dialogo
+  pensamento
+  quebra_cena
+  citacao
+}
+
+// ============================================================
+// ⚔️ SISTEMA DE RAÇAS
+// ============================================================
+
+model racas {
+  id              Int       @id @default(autoincrement())
+  nome            String    @unique @db.VarChar(50)
+  poder_base      Int
+  limite_treino   Int
+  tipo_progressao String    @default("padrao") @db.VarChar(20)
+  criado_em       DateTime? @default(now()) @db.Timestamp(0)
+
+  progressoes   progressoes[]
+  bonus_limites bonus_limites[]
+}
+
+model progressoes {
+  id        Int    @id @default(autoincrement())
+  raca_id   Int
+  classe    String @db.VarChar(50)
+  nivel_min Int
+  nivel_max Int
+  ordem     Int
+
+  raca racas @relation(fields: [raca_id], references: [id], onDelete: Cascade)
+
+  @@index([raca_id])
+}
+
+model bonus_limites {
+  id         Int    @id @default(autoincrement())
+  raca_id    Int
+  classe     String @db.VarChar(50)
+  limite_pct Int
+
+  raca racas @relation(fields: [raca_id], references: [id], onDelete: Cascade)
+
+  @@index([raca_id])
+}
+
+// ============================================================
+// 🧙 GERENCIAMENTO DE PERSONAGENS
+// ============================================================
+
+model personagens {
+  id                   Int       @id @default(autoincrement())
+  nome                 String    @db.VarChar(100)
+  ultimo_aparecimento  Int?      // número do capítulo
+  criado_em            DateTime? @default(now()) @db.Timestamp(0)
+  atualizado_em        DateTime? @updatedAt @db.Timestamp(0)
+
+  progressoes personagem_progressao[]
+}
+
+model personagem_progressao {
+  id            Int                  @id @default(autoincrement())
+  personagem_id Int
+  capitulo_id   Int
+
+  forma         String?              @db.VarChar(100) // ex: "Dragão", "Híbrida"
+  nivel         String?              @db.VarChar(50)  // ex: "Inferior", "Lendário"
+  qtd_estrela   Int?                 @default(1)      // 1 a 5
+  bonus_treino  Float?               @default(0)
+  bonus_pc      Float?               @default(0)
+  ponto_combate Float?               @default(0)      // resultado do cálculo de PC
+  situacao      personagem_situacao? @default(vivo)
+
+  criado_em     DateTime? @default(now()) @db.Timestamp(0)
+
+  personagem personagens @relation(fields: [personagem_id], references: [id], onDelete: Cascade)
+  capitulo   capitulos   @relation(fields: [capitulo_id], references: [id], onDelete: Cascade)
+
+  @@unique([personagem_id, capitulo_id]) // 1 registro por personagem por capítulo
+  @@index([personagem_id])
+  @@index([capitulo_id])
+}
+
+enum personagem_situacao {
+  vivo
+  morto
+  desaparecido
+  desconhecido
+}
