@@ -3,6 +3,12 @@ import ftpService from '../services/ftp.service.js'
 
 const prisma = new PrismaClient()
 
+// Função auxiliar para limpar strings (tira acentos e espaços)
+const limparTexto = (str) => {
+  if (!str) return 'Base';
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_');
+};
+
 export const personagemController = {
 
   // Lista todos os personagens com última progressão
@@ -48,20 +54,7 @@ export const personagemController = {
     try {
       const { nome, ultimo_aparecimento, progressao } = req.body
 
-      let urlImagemRosto = null;
-      let urlImagemFull = null;
-
-      // 1. Tratamento do Upload via FTP
-      if (req.files) {
-        if (req.files.imagem_rosto && req.files.imagem_rosto.length > 0) {
-          urlImagemRosto = await ftpService.uploadFile(req.files.imagem_rosto[0], 'public/personagens/rosto');
-        }
-        if (req.files.imagem_full && req.files.imagem_full.length > 0) {
-          urlImagemFull = await ftpService.uploadFile(req.files.imagem_full[0], 'public/personagens/full');
-        }
-      }
-
-      // 2. Tratamento do FormData (transforma string JSON de volta em Objeto)
+      // 1. Tratamento do FormData
       let progressaoParsed = progressao;
       if (typeof progressao === 'string') {
         try {
@@ -71,11 +64,36 @@ export const personagemController = {
         }
       }
 
+      // 2. Monta o nome customizado para a imagem (Nome_Forma)
+      const nomeLimpo = limparTexto(nome);
+      const formaLimpa = limparTexto(progressaoParsed?.forma);
+      const nomeBaseArquivo = `${nomeLimpo}_${formaLimpa}`;
+
+      let urlImagemRosto = null;
+      let urlImagemFull = null;
+
+      // 3. Tratamento do Upload via FTP passando o nome customizado
+      if (req.files) {
+        if (req.files.imagem_rosto && req.files.imagem_rosto.length > 0) {
+          urlImagemRosto = await ftpService.uploadFile(
+            req.files.imagem_rosto[0], 
+            'public/personagens/rosto',
+            `${nomeBaseArquivo}_Rosto` // Passando o nome customizado
+          );
+        }
+        if (req.files.imagem_full && req.files.imagem_full.length > 0) {
+          urlImagemFull = await ftpService.uploadFile(
+            req.files.imagem_full[0], 
+            'public/personagens/full',
+            `${nomeBaseArquivo}_Full` // Passando o nome customizado
+          );
+        }
+      }
+
       const personagem = await prisma.personagens.create({
         data: {
           nome,
           ultimo_aparecimento: ultimo_aparecimento ? parseInt(ultimo_aparecimento) : null,
-          // CORREÇÃO: Usando os nomes exatos do schema.prisma
           imagemRosto: urlImagemRosto, 
           imagemCorpo: urlImagemFull,  
           progressoes: progressaoParsed ? {
@@ -104,21 +122,29 @@ export const personagemController = {
     try {
       const { nome, ultimo_aparecimento } = req.body
 
-      // Prepara o objeto de atualização
       const dataUpdate = {
         nome,
         ultimo_aparecimento: ultimo_aparecimento ? parseInt(ultimo_aparecimento) : null
       }
 
+      // Na atualização, usamos apenas o Nome do personagem, pois a forma fica nas progressões
+      const nomeLimpo = limparTexto(nome);
+
       // Verifica se vieram novas imagens na requisição de atualização
       if (req.files) {
         if (req.files.imagem_rosto && req.files.imagem_rosto.length > 0) {
-          // CORREÇÃO: Usando imagemRosto
-          dataUpdate.imagemRosto = await ftpService.uploadFile(req.files.imagem_rosto[0], 'public/personagens/rosto');
+          dataUpdate.imagemRosto = await ftpService.uploadFile(
+            req.files.imagem_rosto[0], 
+            'public/personagens/rosto',
+            `${nomeLimpo}_Rosto`
+          );
         }
         if (req.files.imagem_full && req.files.imagem_full.length > 0) {
-          // CORREÇÃO: Usando imagemCorpo
-          dataUpdate.imagemCorpo = await ftpService.uploadFile(req.files.imagem_full[0], 'public/personagens/full');
+          dataUpdate.imagemCorpo = await ftpService.uploadFile(
+            req.files.imagem_full[0], 
+            'public/personagens/full',
+            `${nomeLimpo}_Full`
+          );
         }
       }
 
