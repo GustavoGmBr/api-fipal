@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import ftpService from '../services/ftp.service.js' // ⚠️ Adicione a importação do seu serviço FTP
+import ftpService from '../services/ftp.service.js'
 
 const prisma = new PrismaClient()
 
@@ -54,7 +54,6 @@ export const personagemController = {
       // 1. Tratamento do Upload via FTP
       if (req.files) {
         if (req.files.imagem_rosto && req.files.imagem_rosto.length > 0) {
-          // Supondo que seu ftpService.uploadFile receba o arquivo e o diretório de destino
           urlImagemRosto = await ftpService.uploadFile(req.files.imagem_rosto[0], 'public/personagens/rosto');
         }
         if (req.files.imagem_full && req.files.imagem_full.length > 0) {
@@ -76,8 +75,9 @@ export const personagemController = {
         data: {
           nome,
           ultimo_aparecimento: ultimo_aparecimento ? parseInt(ultimo_aparecimento) : null,
-          imagem_rosto: urlImagemRosto,
-          imagem_full: urlImagemFull,
+          // CORREÇÃO: Usando os nomes exatos do schema.prisma
+          imagemRosto: urlImagemRosto, 
+          imagemCorpo: urlImagemFull,  
           progressoes: progressaoParsed ? {
             create: {
               capitulo_id:   parseInt(progressaoParsed.capitulo_id),
@@ -113,10 +113,12 @@ export const personagemController = {
       // Verifica se vieram novas imagens na requisição de atualização
       if (req.files) {
         if (req.files.imagem_rosto && req.files.imagem_rosto.length > 0) {
-          dataUpdate.imagem_rosto = await ftpService.uploadFile(req.files.imagem_rosto[0], 'public/personagens/rosto');
+          // CORREÇÃO: Usando imagemRosto
+          dataUpdate.imagemRosto = await ftpService.uploadFile(req.files.imagem_rosto[0], 'public/personagens/rosto');
         }
         if (req.files.imagem_full && req.files.imagem_full.length > 0) {
-          dataUpdate.imagem_full = await ftpService.uploadFile(req.files.imagem_full[0], 'public/personagens/full');
+          // CORREÇÃO: Usando imagemCorpo
+          dataUpdate.imagemCorpo = await ftpService.uploadFile(req.files.imagem_full[0], 'public/personagens/full');
         }
       }
 
