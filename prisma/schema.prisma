@@ -114,6 +114,8 @@ model personagens {
   id                   Int       @id @default(autoincrement())
   nome                 String    @db.VarChar(100)
   ultimo_aparecimento  Int?      // número do capítulo
+    imagemRosto String?
+  imagemCorpo String?
   criado_em            DateTime? @default(now()) @db.Timestamp(0)
   atualizado_em        DateTime? @updatedAt @db.Timestamp(0)
 

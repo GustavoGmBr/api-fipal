@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import ftpService from '../services/ftp.service.js' // ⚠️ Adicione a importação do seu serviço FTP
 
 const prisma = new PrismaClient()
 
@@ -42,48 +43,90 @@ export const personagemController = {
     }
   },
 
-  // Cria personagem + primeira progressão
+  // Cria personagem + primeira progressão + Upload de Imagens
   async criar(req, res) {
     try {
       const { nome, ultimo_aparecimento, progressao } = req.body
+
+      let urlImagemRosto = null;
+      let urlImagemFull = null;
+
+      // 1. Tratamento do Upload via FTP
+      if (req.files) {
+        if (req.files.imagem_rosto && req.files.imagem_rosto.length > 0) {
+          // Supondo que seu ftpService.uploadFile receba o arquivo e o diretório de destino
+          urlImagemRosto = await ftpService.uploadFile(req.files.imagem_rosto[0], 'public/personagens/rosto');
+        }
+        if (req.files.imagem_full && req.files.imagem_full.length > 0) {
+          urlImagemFull = await ftpService.uploadFile(req.files.imagem_full[0], 'public/personagens/full');
+        }
+      }
+
+      // 2. Tratamento do FormData (transforma string JSON de volta em Objeto)
+      let progressaoParsed = progressao;
+      if (typeof progressao === 'string') {
+        try {
+          progressaoParsed = JSON.parse(progressao);
+        } catch (e) {
+          console.error("Erro ao fazer parse da progressão", e);
+        }
+      }
 
       const personagem = await prisma.personagens.create({
         data: {
           nome,
           ultimo_aparecimento: ultimo_aparecimento ? parseInt(ultimo_aparecimento) : null,
-          progressoes: progressao ? {
+          imagem_rosto: urlImagemRosto,
+          imagem_full: urlImagemFull,
+          progressoes: progressaoParsed ? {
             create: {
-              capitulo_id:   parseInt(progressao.capitulo_id),
-              forma:         progressao.forma         || null,
-              nivel:         progressao.nivel         || null,
-              qtd_estrela:   parseInt(progressao.qtd_estrela)  || 1,
-              bonus_treino:  parseFloat(progressao.bonus_treino) || 0,
-              bonus_pc:      parseFloat(progressao.bonus_pc)     || 0,
-              ponto_combate: parseFloat(progressao.ponto_combate) || 0,
-              situacao:      progressao.situacao      || 'vivo'
+              capitulo_id:   parseInt(progressaoParsed.capitulo_id),
+              forma:         progressaoParsed.forma         || null,
+              nivel:         progressaoParsed.nivel         || null,
+              qtd_estrela:   parseInt(progressaoParsed.qtd_estrela)  || 1,
+              bonus_treino:  parseFloat(progressaoParsed.bonus_treino) || 0,
+              bonus_pc:      parseFloat(progressaoParsed.bonus_pc)     || 0,
+              ponto_combate: parseFloat(progressaoParsed.ponto_combate) || 0,
+              situacao:      progressaoParsed.situacao      || 'vivo'
             }
           } : undefined
         }
       })
       res.status(201).json(personagem)
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: 'Erro ao criar personagem', details: error.message })
     }
   },
 
-  // Atualiza dados gerais do personagem
+  // Atualiza dados gerais do personagem + Upload de Imagens
   async atualizar(req, res) {
     try {
       const { nome, ultimo_aparecimento } = req.body
+
+      // Prepara o objeto de atualização
+      const dataUpdate = {
+        nome,
+        ultimo_aparecimento: ultimo_aparecimento ? parseInt(ultimo_aparecimento) : null
+      }
+
+      // Verifica se vieram novas imagens na requisição de atualização
+      if (req.files) {
+        if (req.files.imagem_rosto && req.files.imagem_rosto.length > 0) {
+          dataUpdate.imagem_rosto = await ftpService.uploadFile(req.files.imagem_rosto[0], 'public/personagens/rosto');
+        }
+        if (req.files.imagem_full && req.files.imagem_full.length > 0) {
+          dataUpdate.imagem_full = await ftpService.uploadFile(req.files.imagem_full[0], 'public/personagens/full');
+        }
+      }
+
       const personagem = await prisma.personagens.update({
         where: { id: parseInt(req.params.id) },
-        data: {
-          nome,
-          ultimo_aparecimento: ultimo_aparecimento ? parseInt(ultimo_aparecimento) : null
-        }
+        data: dataUpdate
       })
       res.status(200).json(personagem)
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: 'Erro ao atualizar personagem', details: error.message })
     }
   },
