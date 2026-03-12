@@ -7,28 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model blocos_texto {
-  id          BigInt             @id @default(autoincrement())
-  capitulo_id Int
-  ordem       Int
-  tipo        blocos_texto_tipo? @default(paragrafo)
-  conteudo    String             @db.Text
-  capitulos   capitulos          @relation(fields: [capitulo_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "blocos_texto_ibfk_1")
-
-  @@index([capitulo_id], map: "capitulo_id")
-}
-
-model capitulos {
-  id                Int                 @id @default(autoincrement())
-  livro_id          Int
-  numero            Int
-  titulo            String?             @db.VarChar(255)
-  blocos_texto      blocos_texto[]
-  livros            livros              @relation(fields: [livro_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "capitulos_ibfk_1")
-  personagem_ranque personagem_ranque[]
-
-  @@index([livro_id], map: "livro_id")
-}
+// ---------------------------------------------------------
+// 📚 ESTRUTURA DOS LIVROS E TEXTO
+// ---------------------------------------------------------
 
 model livros {
   id              Int         @id @default(autoincrement())
@@ -39,16 +20,46 @@ model livros {
   capitulos       capitulos[]
 }
 
+model capitulos {
+  id                Int                 @id @default(autoincrement())
+  livro_id          Int
+  numero            Int
+  titulo            String?             @db.VarChar(255)
+  blocos_texto      blocos_texto[]
+  personagem_ranque personagem_ranque[]
+  
+  livros            livros              @relation(fields: [livro_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "capitulos_ibfk_1")
+
+  @@index([livro_id], map: "livro_id")
+}
+
+model blocos_texto {
+  id          BigInt             @id @default(autoincrement())
+  capitulo_id Int
+  ordem       Int
+  tipo        blocos_texto_tipo? @default(paragrafo)
+  conteudo    String             @db.Text
+  
+  capitulos   capitulos          @relation(fields: [capitulo_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "blocos_texto_ibfk_1")
+
+  @@index([capitulo_id], map: "capitulo_id")
+}
+
+// ---------------------------------------------------------
+// ⚔️ PERSONAGENS E PROGRESSÃO (RANQUE)
+// ---------------------------------------------------------
+
 model personagens {
   id                Int                 @id @default(autoincrement())
   nome              String              @db.VarChar(100)
-  criado_em         DateTime?           @default(now()) @db.Timestamp(0)
-  atualizado_em     DateTime?           @db.Timestamp(0)
-  imagemCorpo       String?
-  imagemRosto       String?
-  raca_id           Int?
   titulo            String?             @db.VarChar(100)
   classe            String?             @db.VarChar(100)
+  raca_id           Int?
+  imagemCorpo       String?
+  imagemRosto       String?
+  criado_em         DateTime?           @default(now()) @db.Timestamp(0)
+  atualizado_em     DateTime?           @db.Timestamp(0)
+  
   personagem_ranque personagem_ranque[]
   racas             racas?              @relation(fields: [raca_id], references: [id], map: "fk_personagem_raca")
 
@@ -58,20 +69,13 @@ model personagens {
 model racas {
   id          Int           @id @default(autoincrement())
   nome        String        @unique(map: "nome_UNIQUE") @db.VarChar(100)
+  tipo        String?       @db.VarChar(100)
   sistema     racas_sistema @default(ambos)
   base        Int
   limite      Int
-  tipo        String?       @db.VarChar(100)
   criado_em   DateTime?     @default(now()) @db.Timestamp(0)
+  
   personagens personagens[]
-}
-
-model usuarios {
-  id_usuario   Int       @id @default(autoincrement())
-  login        String    @unique(map: "login") @db.VarChar(100)
-  senha        String    @db.VarChar(255)
-  nivel_acesso Int       @default(1)
-  data_criacao DateTime? @default(now()) @db.Timestamp(0)
 }
 
 model personagem_ranque {
@@ -81,16 +85,33 @@ model personagem_ranque {
   forma         String?     @db.VarChar(100)
   ranque        String      @db.VarChar(50)
   estrela       Int         @default(1)
-  bonus_treino  Decimal     @default(0.00) @db.Decimal(10, 2)
+  bonus_treino  Int         @default(0)
+  pc_total      Int         @default(0)
   bonus_pc      Decimal     @default(0.00) @db.Decimal(10, 2)
-  pc_total      Decimal     @default(0.00) @db.Decimal(15, 2)
   criado_em     DateTime?   @default(now()) @db.Timestamp(0)
+  
   capitulos     capitulos   @relation(fields: [capitulo_id], references: [id], onDelete: Cascade, map: "fk_pr_capitulo")
   personagens   personagens @relation(fields: [personagem_id], references: [id], onDelete: Cascade, map: "fk_pr_personagem")
 
   @@index([capitulo_id], map: "fk_pr_capitulo")
   @@index([personagem_id], map: "fk_pr_personagem")
 }
+
+// ---------------------------------------------------------
+// 🔑 SEGURANÇA E USUÁRIOS
+// ---------------------------------------------------------
+
+model usuarios {
+  id_usuario   Int       @id @default(autoincrement())
+  login        String    @unique(map: "login") @db.VarChar(100)
+  senha        String    @db.VarChar(255)
+  nivel_acesso Int       @default(1)
+  data_criacao DateTime? @default(now()) @db.Timestamp(0)
+}
+
+// ---------------------------------------------------------
+// ⚙️ ENUMS
+// ---------------------------------------------------------
 
 enum racas_sistema {
   ranque

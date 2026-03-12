@@ -5,16 +5,18 @@ import router from './routes/index.js'
 
 dotenv.config()
 
-const app  = express()
+const app = express()
 const PORT = process.env.PORT || 3333
 
-// ✅ CORS atualizado para aceitar frontend do Hostgator + localhost
+// ✅ CORS atualizado e completo
 app.use(cors({
   origin: [
     'http://localhost:5173',
     'https://setimoelemento.com.br',
     'http://setimoelemento.com.br'
   ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // ⚠️ FALTAVA ISSO: Libera os métodos, incluindo o OPTIONS do Preflight
+  allowedHeaders: ['Content-Type', 'Authorization'], // ⚠️ Libera o Token JWT
   credentials: true
 }))
 

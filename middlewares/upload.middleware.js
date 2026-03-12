@@ -10,3 +10,4 @@ export const upload = multer({
       : cb(new Error('Apenas JPG, PNG ou WEBP são permitidos'))
   }
 })
+export default upload; // Tem que ter o "default" aqui

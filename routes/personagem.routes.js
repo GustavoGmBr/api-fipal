@@ -1,29 +1,28 @@
-import { Router } from 'express'
-import { personagemController } from '../controllers/personagem.controller.js'
-import { authMiddleware } from '../middlewares/auth.middleware.js'
-import { upload } from '../middlewares/upload.middleware.js'
+import { Router } from 'express';
+import { personagemController } from '../controllers/personagem.controller.js';
+import upload from '../middlewares/upload.middleware.js';
+import { authMiddleware } from '../middlewares/auth.middleware.js';
 
-const router = Router()
+const router = Router();
 
-// Rotas de leitura (GET)
-router.get('/', authMiddleware, personagemController.listarTodos)
-router.get('/comparar', authMiddleware, personagemController.comparar)
-router.get('/:id', authMiddleware, personagemController.buscarPorId)
+// Todas as rotas protegidas pelo JWT
+router.use(authMiddleware);
 
-// Rota de criação (POST) com upload de múltiplas imagens
-router.post('/', authMiddleware, upload.fields([
-  { name: 'imagem_full', maxCount: 1 },
-  { name: 'imagem_rosto', maxCount: 1 }
-]), personagemController.criar)
+// Upload configurado para receber as duas imagens
+const uploadImagens = upload.fields([
+  { name: 'imagem_rosto', maxCount: 1 },
+  { name: 'imagem_full', maxCount: 1 }
+]);
 
-// Rota de atualização (PUT) com upload de múltiplas imagens
-router.put('/:id', authMiddleware, upload.fields([
-  { name: 'imagem_full', maxCount: 1 },
-  { name: 'imagem_rosto', maxCount: 1 }
-]), personagemController.atualizar)
+// Rotas básicas do personagem
+router.get('/', personagemController.listarTodos);
+router.get('/:id', personagemController.buscarPorId);
+router.post('/', uploadImagens, personagemController.criar);
+router.put('/:id', uploadImagens, personagemController.atualizar);
+router.delete('/:id', personagemController.deletar);
 
-// Outras rotas (DELETE, POST progressão)
-router.delete('/:id', authMiddleware, personagemController.deletar)
-router.post('/:id/progressao', authMiddleware, personagemController.adicionarProgressao)
+// Novas rotas de Progressão de Ranque
+router.post('/:id/ranque', personagemController.adicionarProgressaoRanque);
+router.delete('/:id/ranque/:progressaoId', personagemController.deletarProgressaoRanque);
 
-export default router
+export default router;

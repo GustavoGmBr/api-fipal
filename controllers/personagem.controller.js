@@ -3,7 +3,6 @@ import ftpService from '../services/ftp.service.js'
 
 const prisma = new PrismaClient()
 
-// Função auxiliar para limpar strings (tira acentos e espaços)
 const limparTexto = (str) => {
   if (!str) return 'Base';
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_');
@@ -11,18 +10,17 @@ const limparTexto = (str) => {
 
 export const personagemController = {
 
-  // ─── DADOS BÁSICOS DO PERSONAGEM 
+  // ─── DADOS BÁSICOS DO PERSONAGEM ───
 
-  // Lista todos os personagens com última progressão de ranque
   async listarTodos(req, res) {
     try {
       const personagens = await prisma.personagens.findMany({
         include: {
-          raca: true,
-          ranques: {
+          racas: true,
+          personagem_ranque: {
             orderBy: { capitulo_id: 'desc' },
             take: 1,
-            include: { capitulo: true }
+            include: { capitulos: true }
           }
         },
         orderBy: { nome: 'asc' }
@@ -33,27 +31,27 @@ export const personagemController = {
     }
   },
 
-  // Busca um personagem com todo o histórico de ranque
   async buscarPorId(req, res) {
     try {
       const personagem = await prisma.personagens.findUnique({
         where: { id: parseInt(req.params.id) },
         include: {
-          raca: true,
-          ranques: {
+          racas: true,
+          personagem_ranque: {
             orderBy: { capitulo_id: 'asc' },
-            include: { capitulo: { include: { livros: true } } }
+            // ⚠️ CORREÇÃO: Removido o include de "livros" que estava causando o Erro 500
+            include: { capitulos: true } 
           }
         }
       })
       if (!personagem) return res.status(404).json({ error: 'Personagem não encontrado' })
       res.status(200).json(personagem)
     } catch (error) {
+      console.error("Erro no buscarPorId:", error);
       res.status(500).json({ error: 'Erro ao buscar personagem', details: error.message })
     }
   },
 
-  // Cria apenas os dados base do personagem + Upload de Imagens
   async criar(req, res) {
     try {
       const { nome, titulo, classe, raca_id } = req.body
@@ -62,7 +60,6 @@ export const personagemController = {
       let urlImagemRosto = null;
       let urlImagemFull = null;
 
-      // Tratamento do Upload via FTP
       if (req.files) {
         if (req.files.imagem_rosto && req.files.imagem_rosto.length > 0) {
           urlImagemRosto = await ftpService.uploadFile(req.files.imagem_rosto[0], 'public/personagens/rosto', `${nomeLimpo}_Rosto`);
@@ -89,7 +86,6 @@ export const personagemController = {
     }
   },
 
-  // Atualiza dados base do personagem + Upload de Imagens
   async atualizar(req, res) {
     try {
       const { nome, titulo, classe, raca_id } = req.body
@@ -104,7 +100,6 @@ export const personagemController = {
 
       const nomeLimpo = limparTexto(nome);
 
-      // Verifica se vieram novas imagens
       if (req.files) {
         if (req.files.imagem_rosto && req.files.imagem_rosto.length > 0) {
           dataUpdate.imagemRosto = await ftpService.uploadFile(req.files.imagem_rosto[0], 'public/personagens/rosto', `${nomeLimpo}_Rosto`);
@@ -125,7 +120,6 @@ export const personagemController = {
     }
   },
 
-  // Deleta personagem (progressões deletadas em cascade pelo Prisma/BD)
   async deletar(req, res) {
     try {
       await prisma.personagens.delete({ where: { id: parseInt(req.params.id) } })
@@ -135,28 +129,25 @@ export const personagemController = {
     }
   },
 
-  // ─── PROGRESSÃO DE RANQUE 
+  // ─── PROGRESSÃO DE RANQUE ───
 
-  // Calcula o PC e salva a progressão de ranque
   async adicionarProgressaoRanque(req, res) {
     try {
       const personagem_id = parseInt(req.params.id);
       const { capitulo_id, forma, ranque, estrela, bonus_treino, bonus_pc } = req.body;
 
-      // 1. Busca o personagem e a raça para pegar a Base e o Limite
       const personagem = await prisma.personagens.findUnique({
         where: { id: personagem_id },
-        include: { raca: true }
+        include: { racas: true }
       });
 
-      if (!personagem || !personagem.raca) {
+      if (!personagem || !personagem.racas) {
         return res.status(400).json({ error: 'Personagem não encontrado ou sem raça definida.' });
       }
 
-      const raca = personagem.raca;
+      const raca = personagem.racas;
       const isDemonio = raca.nome === "Demônios";
 
-      // 2. Tabelas de Progressão (Regras de Negócio)
       const progressaoPadrao = {
         "Inferior": [1, 10], "Comum": [10, 20], "Incomum": [20, 50],
         "Avançado": [50, 100], "Superior": [100, 150], "Lendário": [150, 300],
@@ -176,8 +167,7 @@ export const personagemController = {
         "Transcendente": 1000, "Guardião": 9999, "Criador": 9999
       };
 
-      // 3. Cálculos do PC
-      const treinoInput = parseFloat(bonus_treino) || 0;
+      const treinoInput = parseInt(bonus_treino) || 0;
       const treinoFinal = Math.min(treinoInput, raca.limite);
       const baseTotal = raca.base + treinoFinal;
 
@@ -198,9 +188,8 @@ export const personagemController = {
       const maxBonus = isDemonio ? 999999 : limiteBonusPadrao[ranque];
       const extraFinal = Math.min(extraInput, maxBonus);
 
-      const pcTotal = baseTotal * multFinal * (1 + (extraFinal / 100));
+      const pcTotal = Math.round(baseTotal * multFinal * (1 + (extraFinal / 100)));
 
-      // 4. Salva no banco (Verifica se já existe progressão neste capítulo)
       const existe = await prisma.personagem_ranque.findFirst({
         where: { personagem_id, capitulo_id: parseInt(capitulo_id) }
       });
@@ -240,7 +229,6 @@ export const personagemController = {
     }
   },
 
-  // Deleta uma progressão de ranque específica
   async deletarProgressaoRanque(req, res) {
     try {
       const { progressaoId } = req.params;
@@ -250,40 +238,6 @@ export const personagemController = {
       res.status(200).json({ message: 'Progressão deletada com sucesso' });
     } catch (error) {
       res.status(500).json({ error: 'Erro ao deletar progressão', details: error.message });
-    }
-  },
-
-  // ─── COMPARAÇÃO 
-
-  // Compara dois personagens (Atualizado para usar a tabela ranques)
-  async comparar(req, res) {
-    try {
-      const { id1, id2 } = req.query
-      const [p1, p2] = await Promise.all([
-        prisma.personagens.findUnique({
-          where: { id: parseInt(id1) },
-          include: {
-            raca: true,
-            ranques: {
-              orderBy: { capitulo_id: 'asc' },
-              include: { capitulo: true }
-            }
-          }
-        }),
-        prisma.personagens.findUnique({
-          where: { id: parseInt(id2) },
-          include: {
-            raca: true,
-            ranques: {
-              orderBy: { capitulo_id: 'asc' },
-              include: { capitulo: true }
-            }
-          }
-        })
-      ])
-      res.status(200).json({ p1, p2 })
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao comparar personagens', details: error.message })
     }
   }
 }
