@@ -7,10 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ---------------------------------------------------------
-// 📚 ESTRUTURA DOS LIVROS E TEXTO
-// ---------------------------------------------------------
-
 model livros {
   id              Int         @id @default(autoincrement())
   titulo          String      @db.VarChar(255)
@@ -21,14 +17,12 @@ model livros {
 }
 
 model capitulos {
-  id                Int                 @id @default(autoincrement())
-  livro_id          Int
-  numero            Int
-  titulo            String?             @db.VarChar(255)
-  blocos_texto      blocos_texto[]
-  personagem_ranque personagem_ranque[]
-  
-  livros            livros              @relation(fields: [livro_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "capitulos_ibfk_1")
+  id           Int            @id @default(autoincrement())
+  livro_id     Int
+  numero       Int
+  titulo       String?        @db.VarChar(255)
+  blocos_texto blocos_texto[]
+  livros       livros         @relation(fields: [livro_id], references: [id], onDelete: Cascade)
 
   @@index([livro_id], map: "livro_id")
 }
@@ -39,67 +33,78 @@ model blocos_texto {
   ordem       Int
   tipo        blocos_texto_tipo? @default(paragrafo)
   conteudo    String             @db.Text
-  
-  capitulos   capitulos          @relation(fields: [capitulo_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "blocos_texto_ibfk_1")
+  capitulos   capitulos          @relation(fields: [capitulo_id], references: [id], onDelete: Cascade)
 
   @@index([capitulo_id], map: "capitulo_id")
 }
 
-// ---------------------------------------------------------
-// ⚔️ PERSONAGENS E PROGRESSÃO (RANQUE)
-// ---------------------------------------------------------
-
 model personagens {
-  id                Int                 @id @default(autoincrement())
-  nome              String              @db.VarChar(100)
-  titulo            String?             @db.VarChar(100)
-  classe            String?             @db.VarChar(100)
-  raca_id           Int?
-  imagemCorpo       String?
-  imagemRosto       String?
-  criado_em         DateTime?           @default(now()) @db.Timestamp(0)
-  atualizado_em     DateTime?           @db.Timestamp(0)
-  
-  personagem_ranque personagem_ranque[]
-  racas             racas?              @relation(fields: [raca_id], references: [id], map: "fk_personagem_raca")
+  id        Int     @id @default(autoincrement())
+  nome      String
+  titulo    String?
+  classe    String?
+  afiliacao String? // Afiliação
 
-  @@index([raca_id], map: "fk_personagem_raca_idx")
+  // --- Atributos Físicos ---
+  altura          String?
+  peso            String?
+  tipo_corporal   String? // Tipo Corporal
+  tipo_cabelo     String? // Tipo De Cabelo
+  cor_cabelo      String? // Cor do Cabelo
+  olhos           String?
+  olhos_especiais String? // Olhos especiais
+  tom_voz         String? // Tom de voz
+
+  // --- Estética e Equipamento ---
+  traje_combate       String? @db.Text // Ex: Armadura Leve
+  traje_casual        String? @db.Text // Ex: Calça e camisa social
+  armamento_principal String? // Ex: Espada Pesada
+
+  // --- Personalidade ---
+  virtude      String?
+  defeito      String?
+  temperamento String?
+
+  // --- Mídias ---
+  imagemCorpo String?
+  imagemRosto String?
+
+  criado_em     DateTime @default(now())
+  atualizado_em DateTime @updatedAt
+  racas         racas?   @relation(fields: [racasId], references: [id])
+  racasId       Int?
+
+  @@map("personagens")
+}
+
+model sistemas {
+  id            Int      @id @default(autoincrement())
+  nome          String   @unique
+  progressao    Json
+  limite_bonus  Json
+  racas         racas[]
+  criado_em     DateTime @default(now())
+  atualizado_em DateTime @updatedAt
+
+  @@map("sistemas")
 }
 
 model racas {
-  id          Int           @id @default(autoincrement())
-  nome        String        @unique(map: "nome_UNIQUE") @db.VarChar(100)
-  tipo        String?       @db.VarChar(100)
-  sistema     racas_sistema @default(ambos)
-  base        Int
-  limite      Int
-  criado_em   DateTime?     @default(now()) @db.Timestamp(0)
-  
+  id     Int    @id @default(autoincrement())
+  nome   String @db.VarChar(80)
+  base   Int
+  limite Int
+  mundo  String @default("Geral") @db.VarChar(80)
+
+  // Relação com Sistemas
+  sistema_id Int
+  sistema    sistemas @relation(fields: [sistema_id], references: [id])
+
+  criado_em   DateTime      @default(now())
   personagens personagens[]
+
+  @@map("racas")
 }
-
-model personagem_ranque {
-  id            Int         @id @default(autoincrement())
-  personagem_id Int
-  capitulo_id   Int
-  forma         String?     @db.VarChar(100)
-  ranque        String      @db.VarChar(50)
-  estrela       Int         @default(1)
-  bonus_treino  Int         @default(0)
-  pc_total      Int         @default(0)
-  bonus_pc      Decimal     @default(0.00) @db.Decimal(10, 2)
-  criado_em     DateTime?   @default(now()) @db.Timestamp(0)
-  
-  capitulos     capitulos   @relation(fields: [capitulo_id], references: [id], onDelete: Cascade, map: "fk_pr_capitulo")
-  personagens   personagens @relation(fields: [personagem_id], references: [id], onDelete: Cascade, map: "fk_pr_personagem")
-
-  @@index([capitulo_id], map: "fk_pr_capitulo")
-  @@index([personagem_id], map: "fk_pr_personagem")
-}
-
-// ---------------------------------------------------------
-// 🔑 SEGURANÇA E USUÁRIOS
-// ---------------------------------------------------------
 
 model usuarios {
   id_usuario   Int       @id @default(autoincrement())
@@ -109,14 +114,15 @@ model usuarios {
   data_criacao DateTime? @default(now()) @db.Timestamp(0)
 }
 
-// ---------------------------------------------------------
-// ⚙️ ENUMS
-// ---------------------------------------------------------
-
-enum racas_sistema {
-  ranque
-  atributo
-  ambos
+model itens {
+  id_item          Int      @id @default(autoincrement())
+  nome             String   @db.VarChar(100)
+  descricao        String?  @db.Text
+  aparencia        String?  @db.Text
+  listaHabilidades Json
+  urlImagem        String?  @db.VarChar(255)
+  usuarios         Json
+  createdAt        DateTime @default(now())
 }
 
 enum blocos_texto_tipo {

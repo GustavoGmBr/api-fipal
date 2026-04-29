@@ -9,16 +9,12 @@ const app = express()
 const PORT = process.env.PORT || 3333
 
 // ✅ CORS atualizado e completo
+// Configuração do CORS
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://setimoelemento.com.br',
-    'http://setimoelemento.com.br'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // ⚠️ FALTAVA ISSO: Libera os métodos, incluindo o OPTIONS do Preflight
-  allowedHeaders: ['Content-Type', 'Authorization'], // ⚠️ Libera o Token JWT
-  credentials: true
-}))
+  origin: '*', // Na produção, substitua '*' pelo domínio do seu front-end (ex: 'https://seusite.com.br')
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // <-- AQUI É O SEGREDO! Adicione o 'PATCH'
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.use(express.json())
 app.use('/api', router)

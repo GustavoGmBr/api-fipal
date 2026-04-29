@@ -1,21 +1,32 @@
-import { Router } from 'express'
-import authRoutes      from './auth.routes.js'
-import usuarioRoutes   from './usuario.routes.js'
-import livrosRoutes    from './livros.routes.js'
-import capitulosRoutes from './capitulos.routes.js'
-import blocosTextoRoutes from './blocos_texto.routes.js'
-import calculadoraRoutes  from './calculadora.routes.js'
-import personagemRoutes from './personagem.routes.js'
-import racaRoutes from './raca.routes.js'; // <-- Importe aqui
+import express from 'express';
+const router = express.Router();
 
-const router = Router()
+import * as authController from '../controllers/auth.controller.js';
+import * as racaController from '../controllers/raca.controller.js';
+import * as sistemaController from '../controllers/sistema.controller.js'; // Importando o novo controller
+import authMiddleware from '../middlewares/auth.middleware.js';
 
-router.use('/auth',        authRoutes)      
-router.use('/usuarios',    usuarioRoutes)
-router.use('/livros',      livrosRoutes)
-router.use('/capitulos',   capitulosRoutes)
-router.use('/blocos-texto', blocosTextoRoutes)
-router.use('/calculadora', calculadoraRoutes)
-router.use('/personagens', personagemRoutes)
-router.use('/racas', racaRoutes)
-export default router
+// --- ROTAS PÚBLICAS ---
+router.post('/login', authController.login);
+
+// Listagem pública (útil para calculadoras e visualização)
+router.get('/racas', racaController.listarTodos);
+router.get('/racas/:id', racaController.buscarPorId);
+router.get('/sistemas', sistemaController.listarTodos);
+router.get('/sistemas/:id', sistemaController.buscarPorId);
+
+// --- ROTAS PROTEGIDAS (GERENCIAMENTO ADMIN) ---
+// Todas as rotas abaixo deste middleware exigem token JWT
+router.use(authMiddleware);
+
+// CRUD de Raças
+router.post('/racas', racaController.criar);
+router.put('/racas/:id', racaController.atualizar);
+router.delete('/racas/:id', racaController.deletar);
+
+// CRUD de Sistemas (Templates de Progressão)
+router.post('/sistemas', sistemaController.criar);
+router.put('/sistemas/:id', sistemaController.atualizar);
+router.delete('/sistemas/:id', sistemaController.deletar);
+
+export default router;
