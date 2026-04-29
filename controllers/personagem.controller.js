@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import ftpService from '../services/ftpService.js'; // Ajuste o caminho se necessário
+import ftpService from '../services/ftp.service.js'; // Ajuste o caminho se necessário
 
 const prisma = new PrismaClient();
 
