@@ -8,21 +8,23 @@ datasource db {
 }
 
 model livros {
-  id              Int         @id @default(autoincrement())
-  titulo          String      @db.VarChar(255)
-  sinopse         String?     @db.Text
-  data_publicacao DateTime?   @db.Date
-  ordem_serie     Int?
-  capitulos       capitulos[]
+  id                   Int                    @id @default(autoincrement())
+  titulo               String                 @db.VarChar(255)
+  sinopse              String?                @db.Text
+  data_publicacao      DateTime?              @db.Date
+  ordem_serie          Int?
+  capitulos            capitulos[]
+  personagemHistoricos personagem_historico[]
 }
 
 model capitulos {
-  id           Int            @id @default(autoincrement())
-  livro_id     Int
-  numero       Int
-  titulo       String?        @db.VarChar(255)
-  blocos_texto blocos_texto[]
-  livros       livros         @relation(fields: [livro_id], references: [id], onDelete: Cascade)
+  id                   Int                    @id @default(autoincrement())
+  livro_id             Int
+  numero               Int
+  titulo               String?                @db.VarChar(255)
+  blocos_texto         blocos_texto[]
+  livros               livros                 @relation(fields: [livro_id], references: [id], onDelete: Cascade)
+  personagemHistoricos personagem_historico[]
 
   @@index([livro_id], map: "livro_id")
 }
@@ -39,42 +41,64 @@ model blocos_texto {
 }
 
 model personagens {
-  id        Int     @id @default(autoincrement())
-  nome      String
-  titulo    String?
-  classe    String?
-  afiliacao String? // Afiliação
-
-  // --- Atributos Físicos ---
-  altura          String?
-  peso            String?
-  tipo_corporal   String? // Tipo Corporal
-  tipo_cabelo     String? // Tipo De Cabelo
-  cor_cabelo      String? // Cor do Cabelo
-  olhos           String?
-  olhos_especiais String? // Olhos especiais
-  tom_voz         String? // Tom de voz
-
-  // --- Estética e Equipamento ---
-  traje_combate       String? @db.Text // Ex: Armadura Leve
-  traje_casual        String? @db.Text // Ex: Calça e camisa social
-  armamento_principal String? // Ex: Espada Pesada
-
-  // --- Personalidade ---
-  virtude      String?
-  defeito      String?
-  temperamento String?
-
-  // --- Mídias ---
-  imagemCorpo String?
-  imagemRosto String?
-
-  criado_em     DateTime @default(now())
-  atualizado_em DateTime @updatedAt
-  racas         racas?   @relation(fields: [racasId], references: [id])
-  racasId       Int?
+  id                  Int                    @id @default(autoincrement())
+  nome                String
+  titulo              String?
+  classe              String?
+  afiliacao           String?
+  altura              String?
+  peso                String?
+  tipo_corporal       String?
+  tipo_cabelo         String?
+  cor_cabelo          String?
+  olhos               String?
+  olhos_especiais     String?
+  tom_voz             String?
+  traje_combate       String?                @db.Text
+  traje_casual        String?                @db.Text
+  armamento_principal String?
+  virtude             String?
+  defeito             String?
+  temperamento        String?
+  imagemCorpo         String?
+  imagemRosto         String?
+  criado_em           DateTime               @default(now())
+  atualizado_em       DateTime               @updatedAt
+  historicos          personagem_historico[]
 
   @@map("personagens")
+}
+
+model personagem_historico {
+  id                    Int         @id @default(autoincrement())
+  personagem_id         Int
+  livro_id              Int?
+  capitulo_id           Int?
+  idade                 String?
+  titulo                String?
+  raca_id               Int
+  ranque                String?
+  subnivel              Int         @default(0)
+  classificacao         String?
+  qtd_treino            Int         @default(0)
+  ponto_combate         Int         @default(0)
+  ponto_combateAetheris Int         @default(0)
+  classes               String?
+  estilo_luta           String?
+  maestria              String?
+  elementos             Json?
+  equipamento           Json?
+  criado_em             DateTime    @default(now())
+  capitulo              capitulos?  @relation(fields: [capitulo_id], references: [id])
+  livro                 livros?     @relation(fields: [livro_id], references: [id])
+  personagem            personagens @relation(fields: [personagem_id], references: [id], onDelete: Cascade)
+  raca                  racas       @relation(fields: [raca_id], references: [id])
+
+  @@index([personagem_id])
+  @@index([capitulo_id], map: "personagem_historico_capitulo_id_fkey")
+  @@index([livro_id], map: "personagem_historico_livro_id_fkey")
+  @@index([raca_id], map: "personagem_historico_raca_id_fkey")
+  @@map("personagem_historico")
 }
 
 model sistemas {
@@ -82,27 +106,25 @@ model sistemas {
   nome          String   @unique
   progressao    Json
   limite_bonus  Json
-  racas         racas[]
   criado_em     DateTime @default(now())
   atualizado_em DateTime @updatedAt
+  racas         racas[]
 
   @@map("sistemas")
 }
 
 model racas {
-  id     Int    @id @default(autoincrement())
-  nome   String @db.VarChar(80)
-  base   Int
-  limite Int
-  mundo  String @default("Geral") @db.VarChar(80)
-
-  // Relação com Sistemas
+  id         Int                    @id @default(autoincrement())
+  nome       String                 @db.VarChar(80)
+  base       Int
+  limite     Int
+  mundo      String                 @default("Geral") @db.VarChar(80)
   sistema_id Int
-  sistema    sistemas @relation(fields: [sistema_id], references: [id])
+  criado_em  DateTime               @default(now())
+  historicos personagem_historico[]
+  sistema    sistemas               @relation(fields: [sistema_id], references: [id])
 
-  criado_em   DateTime      @default(now())
-  personagens personagens[]
-
+  @@index([sistema_id], map: "racas_sistema_id_fkey")
   @@map("racas")
 }
 
@@ -117,6 +139,7 @@ model usuarios {
 model itens {
   id_item          Int      @id @default(autoincrement())
   nome             String   @db.VarChar(100)
+  tipo             String   @db.VarChar(80)
   descricao        String?  @db.Text
   aparencia        String?  @db.Text
   listaHabilidades Json

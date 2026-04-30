@@ -4,40 +4,44 @@ const router = express.Router();
 import * as authController from '../controllers/auth.controller.js';
 import * as racaController from '../controllers/raca.controller.js';
 import * as sistemaController from '../controllers/sistema.controller.js';
-import * as personagemController from '../controllers/personagem.controller.js'; // ✅ ADICIONADO
-import { uploadPersonagem } from '../middlewares/upload.js'; // ✅ ADICIONADO (para as fotos)
+import * as personagemController from '../controllers/personagem.controller.js';
+import * as historicoController from '../controllers/historico.controller.js';
+import * as livroController from '../controllers/livro.controller.js';
+import * as capituloController from '../controllers/capitulo.controller.js';
+
+import { uploadPersonagem } from '../middlewares/upload.js';
 import authMiddleware from '../middlewares/auth.middleware.js';
 
 // --- ROTAS PÚBLICAS ---
 router.post('/login', authController.login);
 
-// Listagem pública (útil para calculadoras e visualização)
+// Raças e Sistemas
 router.get('/racas', racaController.listarTodos);
 router.get('/racas/:id', racaController.buscarPorId);
 router.get('/sistemas', sistemaController.listarTodos);
 router.get('/sistemas/:id', sistemaController.buscarPorId);
 
-// Personagens (Listagem e Detalhes são públicos)
-router.get('/personagens', personagemController.listar); // ✅ ADICIONADO
-router.get('/personagens/:id', personagemController.buscarPorId); // ✅ ADICIONADO
+// Personagens
+router.get('/personagens', personagemController.listar);
+router.get('/personagens/:id', personagemController.buscarPorId);
 
-// --- ROTAS PROTEGIDAS (GERENCIAMENTO ADMIN) ---
-// Todas as rotas abaixo deste middleware exigem token JWT
+// Históricos
+router.get('/historicos/:personagemId', historicoController.listarPorPersonagem);
+router.get('/historicos/detalhes/:id', historicoController.buscarPorId); // ✅ ADICIONADO
+// Livros e Capítulos
+router.get('/livros', livroController.listarTodos);
+router.get('/capitulos/livro/:livroId', capituloController.listarPorLivro);
+
+// --- ROTAS PROTEGIDAS ---
 router.use(authMiddleware);
 
-// CRUD de Raças
-router.post('/racas', racaController.criar);
-router.put('/racas/:id', racaController.atualizar);
-router.delete('/racas/:id', racaController.deletar);
+// CRUD de Personagens, Raças, Sistemas e Históricos...
+router.post('/personagens', uploadPersonagem, personagemController.criar);
+router.put('/personagens/:id', uploadPersonagem, personagemController.atualizar);
+router.delete('/personagens/:id', personagemController.deletar);
 
-// CRUD de Sistemas
-router.post('/sistemas', sistemaController.criar);
-router.put('/sistemas/:id', sistemaController.atualizar);
-router.delete('/sistemas/:id', sistemaController.deletar);
-
-// CRUD de Personagens (Criação, Edição e Delete exigem Login)
-router.post('/personagens', uploadPersonagem, personagemController.criar); // ✅ ADICIONADO
-router.put('/personagens/:id', uploadPersonagem, personagemController.atualizar); // ✅ ADICIONADO
-router.delete('/personagens/:id', personagemController.deletar); // ✅ ADICIONADO
+router.post('/historicos', historicoController.criar);
+router.put('/historicos/:id', historicoController.atualizar);
+router.delete('/historicos/:id', historicoController.deletar);
 
 export default router;
