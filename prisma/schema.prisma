@@ -18,26 +18,43 @@ model livros {
 }
 
 model capitulos {
-  id                   Int                    @id @default(autoincrement())
-  livro_id             Int
-  numero               Int
-  titulo               String?                @db.VarChar(255)
-  blocos_texto         blocos_texto[]
-  livros               livros                 @relation(fields: [livro_id], references: [id], onDelete: Cascade)
+  id        Int    @id @default(autoincrement())
+  livro_id  Int
+  parent_id Int? // Null = Capítulo Pai | ID = Subcapítulo
+  numero    Int
+  titulo    String
+
+  // Metadados (Participantes)
+  personagens_participantes Json?
+  itens_participantes       Json?
+  locais_participantes      Json?
+
+  // 🚀 O NOVO CORAÇÃO DA HISTÓRIA (Exclusivo para Subcapítulos)
+  // Armazena o array de blocos (parágrafos, diálogos, etc.)
+  conteudo_json Json?
+
+  // Relações
+  livros   livros      @relation(fields: [livro_id], references: [id], onDelete: Cascade)
+  parent   capitulos?  @relation("SubCapitulos", fields: [parent_id], references: [id], onDelete: Cascade)
+  children capitulos[] @relation("SubCapitulos")
+
   personagemHistoricos personagem_historico[]
 
   @@index([livro_id], map: "livro_id")
+  @@index([parent_id], map: "parent_id")
+  @@map("capitulos")
 }
 
-model blocos_texto {
-  id          BigInt             @id @default(autoincrement())
-  capitulo_id Int
-  ordem       Int
-  tipo        blocos_texto_tipo? @default(paragrafo)
-  conteudo    String             @db.Text
-  capitulos   capitulos          @relation(fields: [capitulo_id], references: [id], onDelete: Cascade)
+// ✅ Nova Tabela de Locais
+model locais {
+  id        Int      @id @default(autoincrement())
+  nome      String   @db.VarChar(255)
+  mundo     String   @db.VarChar(255)
+  descricao String?  @db.Text
+  imagem    String? // URL salva via FTP na pasta /locais
+  criado_em DateTime @default(now())
 
-  @@index([capitulo_id], map: "capitulo_id")
+  @@map("locais")
 }
 
 model personagens {
@@ -146,12 +163,6 @@ model itens {
   urlImagem        String?  @db.VarChar(255)
   usuarios         Json
   createdAt        DateTime @default(now())
-}
 
-enum blocos_texto_tipo {
-  paragrafo
-  dialogo
-  pensamento
-  quebra_cena
-  citacao
+  @@map("itens") // 👈 ISSO É VITAL: Diz ao Prisma que a tabela se chama "itens"
 }

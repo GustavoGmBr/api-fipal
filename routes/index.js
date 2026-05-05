@@ -1,47 +1,57 @@
-import express from 'express';
-const router = express.Router();
+import { Router } from 'express';
+import personagemPublic from './Public/personagem.routes.js';
+import personagemPrivate from './Private/personagem.routes.js';
+import authRoutes from './Public/auth.routes.js';
+import racaPublic from './Public/raca.routes.js';
+import racaPrivate from './Private/raca.routes.js';
+import sistemaPublic from './Public/sistema.routes.js';
+import sistemaPrivate from './Private/sistema.routes.js';
+import historicoPublic from './Public/historico.routes.js';
+import historicoPrivate from './Private/historico.routes.js';
+import livroPublic from './Public/livro.routes.js';
+import livroPrivate from './Private/livro.routes.js';
+import capituloPublic from './Public/capitulo.routes.js';
+import capituloPrivate from './Private/capitulo.routes.js';
+import itemPublic from './Public/item.routes.js';
+import itemPrivate from './Private/item.routes.js';
+import localPublic from './Public/locais.routes.js';
+import localPrivate from './Private/locais.routes.js';
+const router = Router();
 
-import * as authController from '../controllers/auth.controller.js';
-import * as racaController from '../controllers/raca.controller.js';
-import * as sistemaController from '../controllers/sistema.controller.js';
-import * as personagemController from '../controllers/personagem.controller.js';
-import * as historicoController from '../controllers/historico.controller.js';
-import * as livroController from '../controllers/livro.controller.js';
-import * as capituloController from '../controllers/capitulo.controller.js';
+// 🔑 Autenticação
+router.use('/auth', authRoutes);
 
-import { uploadPersonagem } from '../middlewares/upload.js';
-import authMiddleware from '../middlewares/auth.middleware.js';
+// 👥 Personagens
+router.use('/public/personagens', personagemPublic);
+router.use('/private/personagens', personagemPrivate);
 
-// --- ROTAS PÚBLICAS ---
-router.post('/login', authController.login);
+// 🧌 Racas
+router.use('/public/racas', racaPublic);
+router.use('/private/racas', racaPrivate);
 
-// Raças e Sistemas
-router.get('/racas', racaController.listarTodos);
-router.get('/racas/:id', racaController.buscarPorId);
-router.get('/sistemas', sistemaController.listarTodos);
-router.get('/sistemas/:id', sistemaController.buscarPorId);
+// 🖥️ Sistema
+router.use('/public/sistemas', sistemaPublic);
+router.use('/private/sistemas', sistemaPrivate);
 
-// Personagens
-router.get('/personagens', personagemController.listar);
-router.get('/personagens/:id', personagemController.buscarPorId);
+// 📜 Histórico
+router.use('/public/historicos', historicoPublic);
+router.use('/private/historicos', historicoPrivate);
 
-// Históricos
-router.get('/historicos/:personagemId', historicoController.listarPorPersonagem);
-router.get('/historicos/detalhes/:id', historicoController.buscarPorId); // ✅ ADICIONADO
-// Livros e Capítulos
-router.get('/livros', livroController.listarTodos);
-router.get('/capitulos/livro/:livroId', capituloController.listarPorLivro);
+// 📖 Livro
+router.use('/public/livros', livroPublic);
+router.use('/private/livros', livroPrivate);
 
-// --- ROTAS PROTEGIDAS ---
-router.use(authMiddleware);
 
-// CRUD de Personagens, Raças, Sistemas e Históricos...
-router.post('/personagens', uploadPersonagem, personagemController.criar);
-router.put('/personagens/:id', uploadPersonagem, personagemController.atualizar);
-router.delete('/personagens/:id', personagemController.deletar);
+// 📄 Capitulo
+router.use('/public/capitulos', capituloPublic);
+router.use('/private/capitulos', capituloPrivate);
 
-router.post('/historicos', historicoController.criar);
-router.put('/historicos/:id', historicoController.atualizar);
-router.delete('/historicos/:id', historicoController.deletar);
+// ⚔️ Itens
+router.use('/public/itens', itemPublic);
+router.use('/private/itens', itemPrivate);
+
+// 📍 Locais
+router.use('/public/locais', localPublic);
+router.use('/private/locais', localPrivate);
 
 export default router;

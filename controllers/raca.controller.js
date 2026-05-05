@@ -1,95 +1,102 @@
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma.js';
+import { racaSchema } from '../validator/raca.validator.js'; 
 
-// Criar nova raça
-export const criar = async (req, res) => {
-  try {
-    const { nome, base, limite, mundo, sistema_id } = req.body;
-
-    if (!sistema_id) {
-      return res.status(400).json({ error: "O campo sistema_id é obrigatório." });
-    }
-
-    const novaRaca = await prisma.racas.create({
-      data: { 
-        nome,
-        base: parseInt(base), 
-        limite: parseInt(limite),
-        mundo: mundo || "Geral",
-        sistema_id: parseInt(sistema_id) 
-      },
-      include: {
-        sistema: true
+const racaController = {
+  async index(req, res) {
+    try {
+      const racas = await prisma.racas.findMany({
+        include: { sistema: true }
+      });
+      res.json(racas);
+    } catch (error) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: error.errors });
       }
-    });
+      console.error(error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  },
 
-    res.status(201).json(novaRaca);
-  } catch (error) {
-    res.status(500).json({ error: "Erro ao criar raça", detalhes: error.message });
+  async show(req, res) {
+    try {
+      const id = Number(req.params.id);
+      const raca = await prisma.racas.findUnique({
+        where: { id },
+        include: { sistema: true }
+      });
+      if (!raca) {
+        return res.status(404).json({ error: 'Raça não encontrada' });
+      }
+      res.json(raca);
+    } catch (error) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: error.errors });
+      }
+      if (error.code === 'P2025') {
+        return res.status(404).json({ error: 'Raça não encontrada' });
+      }
+      console.error(error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  },
+
+  async store(req, res) {
+    try {
+      const data = racaSchema.parse(req.body);
+      const raca = await prisma.racas.create({
+        data,
+        include: { sistema: true }
+      });
+      res.status(201).json(raca);
+    } catch (error) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error(error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  },
+
+  async update(req, res) {
+    try {
+      const id = Number(req.params.id);
+      const data = racaSchema.parse(req.body);
+      const raca = await prisma.racas.update({
+        where: { id },
+        data,
+        include: { sistema: true }
+      });
+      res.json(raca);
+    } catch (error) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: error.errors });
+      }
+      if (error.code === 'P2025') {
+        return res.status(404).json({ error: 'Raça não encontrada' });
+      }
+      console.error(error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  },
+
+  async destroy(req, res) {
+    try {
+      const id = Number(req.params.id);
+      await prisma.racas.delete({
+        where: { id }
+      });
+      res.status(204).send();
+    } catch (error) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: error.errors });
+      }
+      if (error.code === 'P2025') {
+        return res.status(404).json({ error: 'Raça não encontrada' });
+      }
+      console.error(error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
   }
 };
 
-// Listar todas as raças
-export const listarTodos = async (req, res) => {
-  try {
-    const todas = await prisma.racas.findMany({
-      include: { sistema: true },
-      orderBy: { nome: 'asc' }
-    });
-    res.json(todas);
-  } catch (error) {
-    res.status(500).json({ error: "Erro ao buscar raças" });
-  }
-};
-
-// Buscar raça por ID (ESTA FUNÇÃO ESTAVA FALTANDO)
-export const buscarPorId = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const raca = await prisma.racas.findUnique({
-      where: { id: parseInt(id) },
-      include: { sistema: true }
-    });
-    
-    if (!raca) return res.status(404).json({ error: "Raça não encontrada" });
-    
-    res.json(raca);
-  } catch (error) {
-    res.status(500).json({ error: "Erro ao buscar raça" });
-  }
-};
-
-// Atualizar raça
-export const atualizar = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { nome, base, limite, mundo, sistema_id } = req.body;
-
-    const racaAtualizada = await prisma.racas.update({
-      where: { id: parseInt(id) },
-      data: {
-        nome,
-        base: base ? parseInt(base) : undefined,
-        limite: limite ? parseInt(limite) : undefined,
-        mundo,
-        sistema_id: sistema_id ? parseInt(sistema_id) : undefined
-      },
-      include: { sistema: true }
-    });
-
-    res.json(racaAtualizada);
-  } catch (error) {
-    res.status(400).json({ error: "Erro ao atualizar raça", detalhes: error.message });
-  }
-};
-
-// Deletar raça
-export const deletar = async (req, res) => {
-  try {
-    const { id } = req.params;
-    await prisma.racas.delete({ where: { id: parseInt(id) } });
-    res.status(204).send();
-  } catch (error) {
-    res.status(400).json({ error: "Erro ao deletar raça" });
-  }
-};
+export default racaController;

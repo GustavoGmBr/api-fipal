@@ -1,123 +1,86 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
+import { historicoSchema } from '../validator/historico.validator.js';
+import { ZodError } from 'zod';
 
-const prisma = new PrismaClient();
-
-// --- 1. CRIAR NOVO REGISTRO DE HISTÓRICO ---
-export const criar = async (req, res) => {
+const store = async (req, res) => {
   try {
-    const d = req.body;
-
-    const novoHistorico = await prisma.personagem_historico.create({
-      data: {
-        // Relações obrigatórias usando connect
-        personagem: { connect: { id: parseInt(d.personagem_id, 10) } },
-        raca: { connect: { id: parseInt(d.raca_id, 10) } },
-        
-        // Relações opcionais
-        ...(d.livro_id && { livro: { connect: { id: parseInt(d.livro_id, 10) } } }),
-        ...(d.capitulo_id && { capitulo: { connect: { id: parseInt(d.capitulo_id, 10) } } }),
-
-        // Atributos de Poder
-        ponto_combate: parseInt(d.ponto_combate, 10) || 0,
-        ponto_combateAetheris: parseInt(d.ponto_combateAetheris, 10) || 0,
-        qtd_treino: parseInt(d.qtd_treino, 10) || 0,
-        subnivel: parseInt(d.subnivel, 10) || 0,
-
-        // Dados Narrativos (Strings)
-        ranque: d.ranque ? String(d.ranque) : null,
-        classificacao: d.classificacao || null,
-        idade: d.idade ? String(d.idade) : null,
-        titulo: d.titulo || null,
-        classes: d.classes || null,
-        estilo_luta: d.estilo_luta || null,
-        maestria: d.maestria || null,
-
-        // Dados Complexos (JSON)
-        elementos: d.elementos || [],
-        equipamento: d.equipamento || {}
-      }
-    });
-
-    res.status(201).json(novoHistorico);
+    const data = historicoSchema.parse(req.body);
+    const historico = await prisma.personagem_historico.create({ data });
+    return res.status(201).json(historico);
   } catch (error) {
-    console.error("❌ ERRO AO CRIAR HISTÓRICO:", error);
-    res.status(400).json({ error: "Erro ao salvar evolução", detalhes: error.message });
+    if (error instanceof ZodError) {
+      return res.status(400).json({ error: "Erro de validação", detalhes: error.errors });
+    }
+    console.error("❌ Erro Prisma (store):", error);
+    return res.status(500).json({ error: 'Erro interno ao criar histórico' });
   }
 };
 
-// --- 2. ATUALIZAR REGISTRO EXISTENTE ---
-export const atualizar = async (req, res) => {
+const update = async (req, res) => {
+  const { id } = req.params;
   try {
-    const { id } = req.params;
-    const d = req.body;
-
-    const dadosAtualizados = {
-      // Relações (Não atualizamos personagem_id por segurança)
-      raca: { connect: { id: parseInt(d.raca_id, 10) } },
-      
-      ...(d.livro_id && { livro: { connect: { id: parseInt(d.livro_id, 10) } } }),
-      ...(d.capitulo_id && { capitulo: { connect: { id: parseInt(d.capitulo_id, 10) } } }),
-
-      // Atributos de Poder
-      ponto_combate: parseInt(d.ponto_combate, 10) || 0,
-      ponto_combateAetheris: parseInt(d.ponto_combateAetheris, 10) || 0,
-      qtd_treino: parseInt(d.qtd_treino, 10) || 0,
-      subnivel: parseInt(d.subnivel, 10) || 0,
-
-      // Dados Narrativos
-      ranque: d.ranque ? String(d.ranque) : null,
-      classificacao: d.classificacao || null,
-      idade: d.idade ? String(d.idade) : null,
-      titulo: d.titulo || null,
-      classes: d.classes || null,
-      estilo_luta: d.estilo_luta || null,
-      maestria: d.maestria || null,
-
-      // Dados Complexos
-      elementos: d.elementos || [],
-      equipamento: d.equipamento || {}
-    };
-
+    const data = historicoSchema.parse(req.body);
     const historico = await prisma.personagem_historico.update({
-      where: { id: parseInt(id, 10) },
-      data: dadosAtualizados
+      where: { id: Number(id) },
+      data
     });
-
-    res.json(historico);
+    return res.json(historico);
   } catch (error) {
-    console.error("❌ ERRO AO ATUALIZAR HISTÓRICO:", error);
-    res.status(400).json({ error: "Falha ao atualizar parâmetros de evolução", detalhes: error.message });
+    if (error instanceof ZodError) {
+      return res.status(400).json({ error: "Erro de validação", detalhes: error.errors });
+    }
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Registro não encontrado' });
+    }
+    console.error("❌ Erro Prisma (update):", error);
+    return res.status(500).json({ error: 'Erro interno ao atualizar' });
   }
 };
 
-// --- 3. BUSCAR POR ID (PARA EDIÇÃO NO FRONT) ---
-export const buscarPorId = async (req, res) => {
+const show = async (req, res) => {
+  const { id } = req.params;
   try {
-    const { id } = req.params;
-
     const historico = await prisma.personagem_historico.findUnique({
-      where: { id: parseInt(id, 10) },
+      where: { id: Number(id) },
       include: {
+        raca: true,
         livro: true,
-        capitulo: true,
-        raca: true
+        capitulo: true
       }
     });
-
-    if (!historico) return res.status(404).json({ error: "Registro não encontrado." });
-    res.json(historico);
+    if (!historico) {
+      return res.status(404).json({ error: 'Registro não encontrado' });
+    }
+    return res.json(historico);
   } catch (error) {
-    res.status(500).json({ error: "Erro ao buscar detalhes" });
+    console.error("❌ Erro Prisma (show):", error);
+    return res.status(500).json({ error: 'Erro interno ao buscar detalhes' });
   }
 };
 
-// --- 4. LISTAR POR PERSONAGEM (LINHA DO TEMPO) ---
-export const listarPorPersonagem = async (req, res) => {
+const destroy = async (req, res) => {
+  const { id } = req.params;
   try {
-    const { personagemId } = req.params;
+    await prisma.personagem_historico.delete({
+      where: { id: Number(id) }
+    });
+    return res.status(204).send();
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Registro não encontrado' });
+    }
+    console.error("❌ Erro Prisma (destroy):", error);
+    return res.status(500).json({ error: 'Erro interno ao deletar' });
+  }
+};
 
+const timeline = async (req, res) => {
+  const { personagemId } = req.params;
+  try {
     const historicos = await prisma.personagem_historico.findMany({
-      where: { personagem_id: parseInt(personagemId, 10) },
+      where: { 
+        personagem_id: Number(personagemId) // ✅ CORRIGIDO: Nome do campo no schema.prisma
+      },
       include: {
         raca: true,
         livro: { select: { titulo: true } },
@@ -125,22 +88,17 @@ export const listarPorPersonagem = async (req, res) => {
       },
       orderBy: { criado_em: 'desc' }
     });
-
-    res.json(historicos);
+    return res.json(historicos);
   } catch (error) {
-    res.status(500).json({ error: "Erro ao buscar linha do tempo" });
+    console.error("❌ Erro Prisma (timeline):", error);
+    return res.status(500).json({ error: 'Erro interno ao carregar linha do tempo' });
   }
 };
 
-// --- 5. DELETAR REGISTRO ---
-export const deletar = async (req, res) => {
-  try {
-    const { id } = req.params;
-    await prisma.personagem_historico.delete({
-      where: { id: parseInt(id, 10) }
-    });
-    res.status(204).send();
-  } catch (error) {
-    res.status(400).json({ error: "Erro ao remover registro" });
-  }
+export default {
+  store,
+  update,
+  show,
+  destroy,
+  timeline
 };

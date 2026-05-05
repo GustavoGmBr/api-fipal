@@ -17,6 +17,7 @@
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.19.2",
+    "basic-ftp": "^6.0.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
@@ -25,7 +26,8 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.0",
     "mysql2": "^3.18.2",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "zod": "^4.4.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.14",

@@ -1,64 +1,64 @@
-import FtpDeploy from 'ftp-deploy'
-import fs        from 'fs'
-import path      from 'path'
-import os        from 'os'
-import crypto    from 'crypto'
+import * as ftp from 'basic-ftp';
+import path from 'path';
+import { Readable } from 'stream';
+
+const config = {
+  host: process.env.FTP_HOST,
+  user: process.env.FTP_USER,
+  password: process.env.FTP_PASSWORD,
+  secure: process.env.FTP_SECURE === 'true'
+};
 
 const ftpService = {
-  
-  // Recebe o objeto file do Multer, a subpasta de destino e um nome customizado opcional
   async uploadFile(file, subPasta = 'personagens', customName = null) {
+    const allowedFolders = ['personagens', 'bestiario', 'itens', 'locais'];
+    
+    if (!allowedFolders.includes(subPasta)) {
+      console.warn(`⚠️ Pasta inválida: ${subPasta}, usando 'personagens'`);
+      subPasta = 'personagens';
+    }
+
+    const client = new ftp.Client();
+    // client.ftp.verbose = true; // Útil para debugar erros de permissão 550
+
     try {
-      const extensao = path.extname(file.originalname);
+      await client.access(config);
       
-      // 1. Define o nome final do arquivo
-      let nomeFinal;
-      if (customName) {
-        // Ex: Goku_SuperSaiyajin_Rosto_171562888.png
-        nomeFinal = `${customName}_${Date.now()}${extensao}`;
-      } else {
-        // Fallback de segurança
-        nomeFinal = `${crypto.randomUUID()}${extensao}`;
-      }
-
-      // 2. Cria uma pasta temporária EXCLUSIVA para este upload
-      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'upload-'));
-      const tmpFile = path.join(tmpDir, nomeFinal);
-
-      // 3. Salva o buffer do Multer no arquivo temporário
-      fs.writeFileSync(tmpFile, file.buffer);
-
-      const ftpDeploy = new FtpDeploy();
-
-      // 4. Monta o caminho remoto na HostGator
-      const remotePath = `/setimoelemento.com.br/uploads/${subPasta}/`.replace(/\/+/g, '/');
-
-      await ftpDeploy.deploy({
-        user:         process.env.FTP_USER,
-        password:     process.env.FTP_PASSWORD,
-        host:         process.env.FTP_HOST,
-        port:         21,
-        localRoot:    tmpDir,
-        remoteRoot:   remotePath,
-        include:      ['*'],     
-        deleteRemote: false,     // ← nunca apaga outras imagens!
-        forcePasv:    true
-      });
-
-      // 5. Limpeza: Remove o arquivo e a pasta temporária do servidor Node
-      fs.unlinkSync(tmpFile);
-      fs.rmdirSync(tmpDir);
-
-      // 6. Retorna a URL pública final para salvar no banco de dados
-      const urlPublica = `https://setimoelemento.com.br/uploads/${subPasta}/${nomeFinal}`.replace(/(?<!:)\/+/g, '/');
+      const extensao = path.extname(file.originalname).toLowerCase();
       
+      // Sanitização básica do nome: remove acentos e caracteres especiais
+      const nameBase = customName 
+        ? customName.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()
+        : Date.now();
+
+      const nomeFinal = customName 
+        ? `${nameBase}_${Date.now()}${extensao}`
+        : `${nameBase}${extensao}`;
+
+      // 1. Caminho remoto (Sempre use / para FTP)
+      const remoteDir = `/setimoelemento.com.br/uploads/${subPasta}`;
+      await client.ensureDir(remoteDir);
+
+      // 2. Converter Buffer em Stream
+      const stream = Readable.from(file.buffer);
+
+      // 3. Upload (Evite path.join para caminhos de servidor Linux/FTP se estiver no Windows)
+      const remoteFilePath = `${remoteDir}/${nomeFinal}`;
+      await client.uploadFrom(stream, remoteFilePath);
+
+      // 4. Construção da URL pública
+      const urlPublica = `https://setimoelemento.com.br/uploads/${subPasta}/${nomeFinal}`;
+      
+      console.log(`✅ Upload concluído: ${nomeFinal}`);
       return urlPublica;
 
     } catch (error) {
-      console.error("Erro no upload FTP:", error);
-      throw new Error("Falha ao enviar imagem para o servidor de arquivos.");
+      console.error("❌ Erro no upload FTP:", error);
+      throw new Error("Falha ao enviar imagem para o servidor.");
+    } finally {
+      client.close();
     }
   }
-}
+};
 
 export default ftpService;

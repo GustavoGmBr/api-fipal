@@ -1,28 +1,32 @@
-import express from 'express'
-import cors from 'cors'
-import dotenv from 'dotenv'
-import router from './routes/index.js'
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import axios from 'axios';
+import router from './routes/index.js';
 
-dotenv.config()
+dotenv.config();
 
-const app = express()
-const PORT = process.env.PORT || 3333
+const app = express();
 
-// ✅ CORS atualizado e completo
-// Configuração do CORS
 app.use(cors({
-  origin: '*', // Na produção, substitua '*' pelo domínio do seu front-end (ex: 'https://seusite.com.br')
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // <-- AQUI É O SEGREDO! Adicione o 'PATCH'
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json())
-app.use('/api', router)
+app.use(express.json());
+
+// ✅ 1. Correção Global para BigInt (MANDATÓRIO)
+BigInt.prototype.toJSON = function () {
+  return this.toString();
+};
 
 app.get('/', (req, res) => {
-  res.json({ message: '🚀 SetimoElemento API rodando!' })
-})
+  res.json({ message: 'Welcome to the API!' });
+});
+app.use('/api', router);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`)
-})
+const port = process.env.PORT || 3333;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});

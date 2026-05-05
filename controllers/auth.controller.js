@@ -1,43 +1,53 @@
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { prisma } from '../lib/prisma.js';
+import { loginSchema } from '../validator/auth.validator.js';
+import { ZodError } from 'zod';
 
-const prisma = new PrismaClient();
-
-export const login = async (req, res) => {
-  const { login, senha } = req.body;
-
+const login = async (req, res) => {
   try {
-    const usuario = await prisma.usuarios.findUnique({ 
-      where: { login: login } 
+    const { login: usuarioLogin, senha } = loginSchema.parse(req.body);
+
+    const usuario = await prisma.usuarios.findUnique({
+      where: { login: usuarioLogin },
+      select: {
+        id_usuario: true,
+        login: true,
+        nivel_acesso: true,
+        senha: true,
+      },
     });
 
-    if (!usuario) {
-      return res.status(401).json({ error: 'Usuário não encontrado' });
-    }
-
-    const senhaValida = await bcrypt.compare(senha, usuario.senha);
-
-    if (!senhaValida) {
-      return res.status(401).json({ error: 'Senha incorreta' });
+    if (!usuario || !(await bcrypt.compare(senha, usuario.senha))) {
+      return res.status(401).json({ message: 'Credenciais inválidas' });
     }
 
     const token = jwt.sign(
-      { id: usuario.id_usuario, nivel: usuario.nivel_acesso },
-      process.env.JWT_SECRET || 'secret_7elemento',
-      { expiresIn: '1d' }
+      {
+        id_usuario: usuario.id_usuario,
+        nivel_acesso: usuario.nivel_acesso,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
     );
 
     return res.json({
       token,
       usuario: {
-        id: usuario.id_usuario,
+        id_usuario: usuario.id_usuario,
         login: usuario.login,
-        nivel: usuario.nivel_acesso
-      }
+        nivel_acesso: usuario.nivel_acesso,
+      },
     });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Erro interno no servidor' });
+    if (error.name === 'ZodError') {
+      return res.status(400).json({
+        message: 'Dados de login inválidos',
+        errors: error.issues.map((issue) => issue.message),
+      });
+    }
+    return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
+
+export default { login };
