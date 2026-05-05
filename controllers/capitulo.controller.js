@@ -42,20 +42,57 @@ const capituloController = {
     }
   },
 
-  async show(req, res) {
+    async show(req, res) {
     try {
       const { id } = req.params;
+
       const capitulo = await prisma.capitulos.findUnique({
         where: { id: Number(id) },
         include: {
-          children: true // Caso queira ver os filhos ao abrir o pai
+          parent: true, 
+          children: { orderBy: { numero: 'asc' } }
         }
       });
 
       if (!capitulo) return res.status(404).json({ message: 'Capítulo não encontrado' });
 
-      res.json(toJSON(capitulo));
+      // 1. Lógica de Herança
+      let rawParticipantes = capitulo.personagens_participantes;
+      if ((!rawParticipantes || (Array.isArray(rawParticipantes) && rawParticipantes.length === 0)) && capitulo.parent) {
+        rawParticipantes = capitulo.parent.personagens_participantes;
+      }
+
+      const listaBruta = Array.isArray(rawParticipantes) ? rawParticipantes : [];
+      
+      // 2. Extração de IDs (Suporta tanto [1, 2] quanto [{id: 1}, {id: 2}])
+      const idsNumericos = listaBruta.map(item => {
+        if (typeof item === 'number') return item;
+        if (item && typeof item === 'object' && item.id) return Number(item.id);
+        return null;
+      }).filter(id => id !== null && !isNaN(id));
+
+      let personagensVinculados = [];
+
+      if (idsNumericos.length > 0) {
+        personagensVinculados = await prisma.personagens.findMany({
+          where: { id: { in: idsNumericos } },
+          select: { 
+            id: true, 
+            nome: true, 
+            imagemRosto: true,
+            // Adicionei o campo 'sexo' se ele existir no seu model para as cores do editor
+            // sexo: true 
+          }
+        });
+      }
+
+      res.json(toJSON({
+        ...capitulo,
+        personagens_detalhes: personagensVinculados
+      }));
+
     } catch (error) {
+      console.error("❌ Erro no show do capítulo:", error);
       handleError(error, res);
     }
   },
