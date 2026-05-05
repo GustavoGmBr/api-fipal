@@ -19,7 +19,7 @@ import localprivate from './private/locais.routes.js';
 const router = Router();
 
 // 🔑 Autenticação
-router.use('/auth', authRoutes);
+router.use('/public/auth', authRoutes);
 
 // 👥 Personagens
 router.use('/public/personagens', personagempublic);
