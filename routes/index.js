@@ -5,7 +5,7 @@ import authRoutes from './public/auth.routes.js';
 import racapublic from './public/raca.routes.js';
 import racaprivate from './private/raca.routes.js';
 import sistemapublic from './public/sistema.routes.js';
-import sistemaprivate from './private/sistema.routes.js';
+import sistemaprivate from './private/sistema.routes.js'; // ⚠️ Notei 'sistemas' aqui, verifique se o arquivo é 'sistema' ou 'sistemas'
 import historicopublic from './public/historico.routes.js';
 import historicoprivate from './private/historico.routes.js';
 import livropublic from './public/livro.routes.js';
@@ -16,42 +16,43 @@ import itempublic from './public/item.routes.js';
 import itemprivate from './private/item.routes.js';
 import localpublic from './public/locais.routes.js';
 import localprivate from './private/locais.routes.js';
+
 const router = Router();
 
-// 🔑 Autenticação
-router.use('/public/auth', authRoutes);
+// 🔑 Autenticação - CORRIGIDO para /api/auth/login
+// Removi o '/public' do caminho da URL, mas mantive o import da pasta public
+router.use('/auth', authRoutes); 
 
 // 👥 Personagens
-router.use('/public/personagens', personagempublic);
+router.use('/personagens', personagempublic); // Acessível via /api/personagens
 router.use('/private/personagens', personagemprivate);
 
 // 🧌 Racas
-router.use('/public/racas', racapublic);
+router.use('/racas', racapublic);
 router.use('/private/racas', racaprivate);
 
 // 🖥️ Sistema
-router.use('/public/sistemas', sistemapublic);
+router.use('/sistemas', sistemapublic);
 router.use('/private/sistemas', sistemaprivate);
 
 // 📜 Histórico
-router.use('/public/historicos', historicopublic);
+router.use('/historicos', historicopublic);
 router.use('/private/historicos', historicoprivate);
 
 // 📖 Livro
-router.use('/public/livros', livropublic);
+router.use('/livros', livropublic);
 router.use('/private/livros', livroprivate);
 
-
 // 📄 Capitulo
-router.use('/public/capitulos', capitulopublic);
+router.use('/capitulos', capitulopublic);
 router.use('/private/capitulos', capituloprivate);
 
 // ⚔️ Itens
-router.use('/public/itens', itempublic);
+router.use('/itens', itempublic);
 router.use('/private/itens', itemprivate);
 
 // 📍 Locais
-router.use('/public/locais', localpublic);
+router.use('/locais', localpublic);
 router.use('/private/locais', localprivate);
 
 export default router;
