@@ -60,7 +60,35 @@ const personagemController = {
       res.status(400).json({ error: 'Erro ao criar personagem', detalhes: error.message });
     }
   },
+  // personagemController.js
 
+  async buscarParaLeitura(req, res) {
+    try {
+      const { id, capituloId } = req.params;
+
+      // LOG DE DEBUG
+      console.log(`DEBUG: Buscando Personagem ID: ${id} no Capítulo ID: ${capituloId}`);
+
+      const personagem = await prisma.personagens.findUnique({
+        where: { id: parseInt(id) },
+        include: {
+          historicos: {
+            // Filtro crucial: deve bater com o ID do capítulo que você está lendo
+            where: { capitulo_id: parseInt(capituloId) },
+            include: { raca: true }
+          }
+        }
+      });
+
+      console.log("DEBUG: Histórico encontrado:", personagem?.historicos);
+
+      if (!personagem) return res.status(404).json({ error: 'Personagem não encontrado' });
+      res.json(personagem);
+    } catch (error) {
+      console.error('❌ Erro no controller:', error);
+      res.status(500).json({ error: 'Erro interno' });
+    }
+  },
   async buscarPorId(req, res) {
     try {
       const { id } = req.params;
@@ -114,10 +142,10 @@ const personagemController = {
 
       const atualizado = await prisma.personagens.update({
         where: { id: parseInt(id) },
-        data: { 
-          ...dados, 
-          imagemCorpo: urlCorpo, 
-          imagemRosto: urlRosto 
+        data: {
+          ...dados,
+          imagemCorpo: urlCorpo,
+          imagemRosto: urlRosto
         }
       });
 
