@@ -7,51 +7,55 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model sagas {
+  id        Int      @id @default(autoincrement())
+  nome      String   @db.VarChar(255)
+  descricao String?  @db.Text
+  livros    livros[]
+
+  @@map("sagas")
+}
+
 model livros {
   id                   Int                    @id @default(autoincrement())
   titulo               String                 @db.VarChar(255)
   sinopse              String?                @db.Text
   data_publicacao      DateTime?              @db.Date
   ordem_serie          Int?
+  saga_id              Int?
+  saga                 sagas?                 @relation(fields: [saga_id], references: [id], onDelete: SetNull)
   capitulos            capitulos[]
   personagemHistoricos personagem_historico[]
+
+  @@map("livros")
 }
 
 model capitulos {
-  id        Int    @id @default(autoincrement())
-  livro_id  Int
-  parent_id Int? // Null = Capítulo Pai | ID = Subcapítulo
-  numero    Int
-  titulo    String
-
-  // Metadados (Participantes)
+  id                        Int                    @id @default(autoincrement())
+  livro_id                  Int
+  parent_id                 Int?
+  numero                    Int
+  titulo                    String
   personagens_participantes Json?
   itens_participantes       Json?
   locais_participantes      Json?
-
-  // 🚀 O NOVO CORAÇÃO DA HISTÓRIA (Exclusivo para Subcapítulos)
-  // Armazena o array de blocos (parágrafos, diálogos, etc.)
-  conteudo_json Json?
-
-  // Relações
-  livros   livros      @relation(fields: [livro_id], references: [id], onDelete: Cascade)
-  parent   capitulos?  @relation("SubCapitulos", fields: [parent_id], references: [id], onDelete: Cascade)
-  children capitulos[] @relation("SubCapitulos")
-
-  personagemHistoricos personagem_historico[]
+  conteudo_json             Json?
+  livros                    livros                 @relation(fields: [livro_id], references: [id], onDelete: Cascade)
+  parent                    capitulos?             @relation("SubCapitulos", fields: [parent_id], references: [id], onDelete: Cascade)
+  children                  capitulos[]            @relation("SubCapitulos")
+  personagemHistoricos      personagem_historico[]
 
   @@index([livro_id], map: "livro_id")
   @@index([parent_id], map: "parent_id")
   @@map("capitulos")
 }
 
-// ✅ Nova Tabela de Locais
 model locais {
   id        Int      @id @default(autoincrement())
   nome      String   @db.VarChar(255)
   mundo     String   @db.VarChar(255)
   descricao String?  @db.Text
-  imagem    String? // URL salva via FTP na pasta /locais
+  imagem    String?
   criado_em DateTime @default(now())
 
   @@map("locais")
@@ -87,7 +91,7 @@ model personagens {
 }
 
 model personagem_historico {
-  id                    Int         @id @default(autoincrement())
+  id                    Int           @id @default(autoincrement())
   personagem_id         Int
   livro_id              Int?
   capitulo_id           Int?
@@ -95,27 +99,50 @@ model personagem_historico {
   titulo                String?
   raca_id               Int
   ranque                String?
-  subnivel              Int         @default(0)
+  subnivel              Int           @default(0)
   classificacao         String?
-  qtd_treino            Int         @default(0)
-  ponto_combate         Int         @default(0)
-  ponto_combateAetheris Int         @default(0)
+  nivel                 Int           @default(1)
+  
+  // Alterações de Experiência
+  xpAtual               Int           @default(0) // Antigo "experiencia"
+  xpProximo             Int           @default(100) // Novo campo necessário para o próximo nível
+  
+  qtd_treino            Int           @default(0)
+  ponto_combate         Int           @default(0)
+  ponto_combateAetheris Int           @default(0)
   classes               String?
   estilo_luta           String?
   maestria              String?
   elementos             Json?
   equipamento           Json?
-  criado_em             DateTime    @default(now())
-  capitulo              capitulos?  @relation(fields: [capitulo_id], references: [id])
-  livro                 livros?     @relation(fields: [livro_id], references: [id])
-  personagem            personagens @relation(fields: [personagem_id], references: [id], onDelete: Cascade)
-  raca                  racas       @relation(fields: [raca_id], references: [id])
+  inventario            inventarios[]
+  criado_em             DateTime      @default(now())
+  
+  capitulo              capitulos?    @relation(fields: [capitulo_id], references: [id])
+  livro                 livros?       @relation(fields: [livro_id], references: [id])
+  personagem            personagens   @relation(fields: [personagem_id], references: [id], onDelete: Cascade)
+  raca                  racas         @relation(fields: [raca_id], references: [id])
 
   @@index([personagem_id])
-  @@index([capitulo_id], map: "personagem_historico_capitulo_id_fkey")
-  @@index([livro_id], map: "personagem_historico_livro_id_fkey")
-  @@index([raca_id], map: "personagem_historico_raca_id_fkey")
   @@map("personagem_historico")
+}
+
+model inventarios {
+  id           Int                  @id @default(autoincrement())
+  historico_id Int
+  nome         String               @db.VarChar(255)
+  
+  // Alteração de Tipo e Subtipo
+  tipo         String?              @db.VarChar(100)
+  subtipo      String?              @db.VarChar(100) // Adicionado para suportar categorias como "espada"
+  
+  quantidade   Decimal              @default(0.0) @db.Decimal(18, 2)
+  historico    personagem_historico @relation(fields: [historico_id], references: [id], onDelete: Cascade)
+
+  itens        itens?               @relation(fields: [itensId_item], references: [id_item])
+  itensId_item Int?
+
+  @@map("inventarios")
 }
 
 model sistemas {
@@ -141,7 +168,6 @@ model racas {
   historicos personagem_historico[]
   sistema    sistemas               @relation(fields: [sistema_id], references: [id])
 
-  @@index([sistema_id], map: "racas_sistema_id_fkey")
   @@map("racas")
 }
 
@@ -151,6 +177,8 @@ model usuarios {
   senha        String    @db.VarChar(255)
   nivel_acesso Int       @default(1)
   data_criacao DateTime? @default(now()) @db.Timestamp(0)
+
+  @@map("usuarios")
 }
 
 model itens {
@@ -164,5 +192,8 @@ model itens {
   usuarios         Json
   createdAt        DateTime @default(now())
 
-  @@map("itens") // 👈 ISSO É VITAL: Diz ao Prisma que a tabela se chama "itens"
+  // ✅ ESSA LINHA É OBRIGATÓRIA para manter a relação com 'inventarios'
+  inventarios inventarios[]
+
+  @@map("itens")
 }

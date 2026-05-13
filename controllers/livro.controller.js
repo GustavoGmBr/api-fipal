@@ -5,15 +5,15 @@ import { ZodError } from 'zod';
 const livroController = {
   async index(req, res) {
     try {
-      const livros = await prisma.livros.findMany();
+      // Incluído 'saga' na listagem geral para facilitar a exibição
+      const livros = await prisma.livros.findMany({
+        include: { 
+          saga: true 
+        }
+      });
       res.json(livros);
     } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ message: 'Dados inválidos', errors: error.errors });
-      } else if (error.code === 'P2025') {
-        return res.status(404).json({ message: 'Livro não encontrado' });
-      }
-      res.status(500).json({ message: 'Erro interno do servidor' });
+      handleErrors(res, error);
     }
   },
 
@@ -21,21 +21,21 @@ const livroController = {
     try {
       const { id } = req.params;
       const livroId = Number(id);
+      
       const livro = await prisma.livros.findUnique({
         where: { id: livroId },
-        include: { capitulos: true }
+        include: { 
+          capitulos: true,
+          saga: true // Incluindo os detalhes da saga vinculada
+        }
       });
+
       if (!livro) {
         return res.status(404).json({ message: 'Livro não encontrado' });
       }
       res.json(livro);
     } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ message: 'Dados inválidos', errors: error.errors });
-      } else if (error.code === 'P2025') {
-        return res.status(404).json({ message: 'Livro não encontrado' });
-      }
-      res.status(500).json({ message: 'Erro interno do servidor' });
+      handleErrors(res, error);
     }
   },
 
@@ -43,16 +43,12 @@ const livroController = {
     try {
       const data = livroSchema.parse(req.body);
       const livro = await prisma.livros.create({
-        data
+        data,
+        include: { saga: true } // Retorna o objeto criado com a saga inclusa
       });
       res.status(201).json(livro);
     } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ message: 'Dados inválidos', errors: error.errors });
-      } else if (error.code === 'P2025') {
-        return res.status(404).json({ message: 'Livro não encontrado' });
-      }
-      res.status(500).json({ message: 'Erro interno do servidor' });
+      handleErrors(res, error);
     }
   },
 
@@ -61,18 +57,15 @@ const livroController = {
       const { id } = req.params;
       const livroId = Number(id);
       const data = livroSchema.parse(req.body);
+
       const livro = await prisma.livros.update({
         where: { id: livroId },
-        data
+        data,
+        include: { saga: true }
       });
       res.json(livro);
     } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ message: 'Dados inválidos', errors: error.errors });
-      } else if (error.code === 'P2025') {
-        return res.status(404).json({ message: 'Livro não encontrado' });
-      }
-      res.status(500).json({ message: 'Erro interno do servidor' });
+      handleErrors(res, error);
     }
   },
 
@@ -85,14 +78,19 @@ const livroController = {
       });
       res.status(204).send();
     } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ message: 'Dados inválidos', errors: error.errors });
-      } else if (error.code === 'P2025') {
-        return res.status(404).json({ message: 'Livro não encontrado' });
-      }
-      res.status(500).json({ message: 'Erro interno do servidor' });
+      handleErrors(res, error);
     }
   }
 };
+
+// Função auxiliar para padronizar o tratamento de erros
+function handleErrors(res, error) {
+  if (error instanceof ZodError) {
+    return res.status(400).json({ message: 'Dados inválidos', errors: error.errors });
+  } else if (error.code === 'P2025') {
+    return res.status(404).json({ message: 'Livro não encontrado' });
+  }
+  res.status(500).json({ message: 'Erro interno do servidor' });
+}
 
 export default livroController;
