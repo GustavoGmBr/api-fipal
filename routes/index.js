@@ -16,12 +16,19 @@ import itempublic from './public/item.routes.js';
 import itemprivate from './private/item.routes.js';
 import localpublic from './public/locais.routes.js';
 import localprivate from './private/locais.routes.js';
-
+import sagaspublic from './public/saga.routes.js';
+import sagasprivate from './private/saga.routes.js';
+import inventariopublic from './public/inventario.routes.js';
+import inventarioprivate from './private/inventario.routes.js';
 const router = Router();
 
 // 🔑 Autenticação - CORRIGIDO para /api/auth/login
 // Removi o '/public' do caminho da URL, mas mantive o import da pasta public
 router.use('/auth', authRoutes); 
+
+// 📍 sagas
+router.use('/sagas', sagaspublic);
+router.use('/private/sagas', sagasprivate);
 
 // 👥 Personagens
 router.use('/personagens', personagempublic); // Acessível via /api/personagens
@@ -54,5 +61,9 @@ router.use('/private/itens', itemprivate);
 // 📍 Locais
 router.use('/locais', localpublic);
 router.use('/private/locais', localprivate);
+
+// ⚔️ Inventario
+router.use('/inventarios', inventariopublic);
+router.use('/private/inventarios', inventarioprivate);
 
 export default router;
