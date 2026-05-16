@@ -23,11 +23,18 @@ model livros {
   data_publicacao      DateTime?              @db.Date
   ordem_serie          Int?
   saga_id              Int?
+<<<<<<< HEAD
+=======
+  saga                 sagas?                 @relation(fields: [saga_id], references: [id], onDelete: SetNull)
+>>>>>>> ca0e9fd5ddc13ee00a8f065b118678c503356742
   capitulos            capitulos[]
   saga                 sagas?                 @relation(fields: [saga_id], references: [id])
   personagemHistoricos personagem_historico[]
 
+<<<<<<< HEAD
   @@index([saga_id], map: "livros_saga_id_fkey")
+=======
+>>>>>>> ca0e9fd5ddc13ee00a8f065b118678c503356742
   @@map("livros")
 }
 
@@ -103,8 +110,16 @@ model personagem_historico {
   subnivel              Int           @default(0)
   classificacao         String?
   nivel                 Int           @default(1)
+<<<<<<< HEAD
   xpAtual               Int           @default(0)
   xpProximo             Int           @default(100)
+=======
+  
+  // Alterações de Experiência
+  xpAtual               Int           @default(0) // Antigo "experiencia"
+  xpProximo             Int           @default(100) // Novo campo necessário para o próximo nível
+  
+>>>>>>> ca0e9fd5ddc13ee00a8f065b118678c503356742
   qtd_treino            Int           @default(0)
   ponto_combate         Int           @default(0)
   ponto_combateAetheris Int           @default(0)
@@ -113,18 +128,21 @@ model personagem_historico {
   maestria              String?
   elementos             Json?
   equipamento           Json?
+<<<<<<< HEAD
   habilidades           Json?
   criado_em             DateTime      @default(now())
   inventario            inventarios[]
+=======
+  inventario            inventarios[]
+  criado_em             DateTime      @default(now())
+  
+>>>>>>> ca0e9fd5ddc13ee00a8f065b118678c503356742
   capitulo              capitulos?    @relation(fields: [capitulo_id], references: [id])
   livro                 livros?       @relation(fields: [livro_id], references: [id])
   personagem            personagens   @relation(fields: [personagem_id], references: [id], onDelete: Cascade)
   raca                  racas         @relation(fields: [raca_id], references: [id])
 
   @@index([personagem_id])
-  @@index([capitulo_id], map: "personagem_historico_capitulo_id_fkey")
-  @@index([livro_id], map: "personagem_historico_livro_id_fkey")
-  @@index([raca_id], map: "personagem_historico_raca_id_fkey")
   @@map("personagem_historico")
 }
 
@@ -132,6 +150,7 @@ model inventarios {
   id           Int                  @id @default(autoincrement())
   historico_id Int
   nome         String               @db.VarChar(255)
+<<<<<<< HEAD
   descricao    String?              @db.Text
   tipo         String?              @db.VarChar(100)
   subtipo      String?              @db.VarChar(100)
@@ -142,6 +161,19 @@ model inventarios {
 
   @@index([historico_id], map: "inventarios_historico_id_fkey")
   @@index([itensId_item], map: "inventarios_itensId_item_fkey")
+=======
+  
+  // Alteração de Tipo e Subtipo
+  tipo         String?              @db.VarChar(100)
+  subtipo      String?              @db.VarChar(100) // Adicionado para suportar categorias como "espada"
+  
+  quantidade   Decimal              @default(0.0) @db.Decimal(18, 2)
+  historico    personagem_historico @relation(fields: [historico_id], references: [id], onDelete: Cascade)
+
+  itens        itens?               @relation(fields: [itensId_item], references: [id_item])
+  itensId_item Int?
+
+>>>>>>> ca0e9fd5ddc13ee00a8f065b118678c503356742
   @@map("inventarios")
 }
 
@@ -168,7 +200,6 @@ model racas {
   historicos personagem_historico[]
   sistema    sistemas               @relation(fields: [sistema_id], references: [id])
 
-  @@index([sistema_id], map: "racas_sistema_id_fkey")
   @@map("racas")
 }
 
@@ -194,5 +225,11 @@ model itens {
   createdAt        DateTime      @default(now())
   inventarios      inventarios[]
 
+<<<<<<< HEAD
+=======
+  // ✅ ESSA LINHA É OBRIGATÓRIA para manter a relação com 'inventarios'
+  inventarios inventarios[]
+
+>>>>>>> ca0e9fd5ddc13ee00a8f065b118678c503356742
   @@map("itens")
 }

@@ -4,8 +4,10 @@ export const historicoSchema = z.object({
   personagem_id: z.coerce.number({ invalid_type_error: "ID do personagem inválido" }),
   raca_id: z.coerce.number({ invalid_type_error: "ID da raça inválido" }),
 
+
   livro_id: z.coerce.number().optional().nullable(),
   capitulo_id: z.coerce.number().optional().nullable(),
+
 
   subnivel: z.coerce.number().default(0),
   qtd_treino: z.coerce.number().default(0),

@@ -63,7 +63,12 @@ router.use('/locais', localpublic);
 router.use('/private/locais', localprivate);
 
 // ⚔️ Inventario
+<<<<<<< HEAD
 router.use('/inventarios', inventariopublic);
 router.use('/private/inventarios', inventarioprivate);
+=======
+router.use('/inventario', inventariopublic);
+router.use('/private/inventario', inventarioprivate);
+>>>>>>> ca0e9fd5ddc13ee00a8f065b118678c503356742
 
 export default router;
