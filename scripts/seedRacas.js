@@ -1,105 +1,125 @@
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
 async function main() {
+  console.log('🌱 Iniciando o seed do banco de dados...');
 
-  // --- 1. RAÇAS ---
-  const racasData = [
-    { nome: 'Demônios',    poder_base: 15, limite_treino: 5,  tipo_progressao: 'demonios' },
-    { nome: 'Dragões',     poder_base: 20, limite_treino: 5,  tipo_progressao: 'padrao'   },
-    { nome: 'Fadas',       poder_base: 16, limite_treino: 4,  tipo_progressao: 'padrao'   },
-    { nome: 'Vampiros',    poder_base: 12, limite_treino: 8,  tipo_progressao: 'padrao'   },
-    { nome: 'Lobisomens',  poder_base: 12, limite_treino: 8,  tipo_progressao: 'padrao'   },
-    { nome: 'Elfos',       poder_base: 9,  limite_treino: 11, tipo_progressao: 'padrao'   },
-    { nome: 'Anões',       poder_base: 9,  limite_treino: 11, tipo_progressao: 'padrao'   },
-    { nome: 'Gigantes',    poder_base: 8,  limite_treino: 12, tipo_progressao: 'padrao'   },
-    { nome: 'Marines',     poder_base: 5,  limite_treino: 15, tipo_progressao: 'padrao'   },
-    { nome: 'Ferais',      poder_base: 5,  limite_treino: 15, tipo_progressao: 'padrao'   },
-    { nome: 'Humanos',     poder_base: 1,  limite_treino: 19, tipo_progressao: 'padrao'   },
-  ]
+  // ==========================================
+  // 1. CADASTRO DOS SISTEMAS (IDs FIXOS)
+  // ==========================================
+  
+  // Sistema Erion (ID: 1)
+  const sistemaErion = await prisma.sistemas.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      id: 1,
+      nome: 'Padrão',
+      progressao: [
+        { "ordem": 1, "raridade": "Inferior", "valores": [1, 10] },
+        { "ordem": 2, "raridade": "Comum", "valores": [10, 25] },
+        { "ordem": 3, "raridade": "Incomum", "valores": [25, 50] },
+        { "ordem": 4, "raridade": "Avançado", "valores": [50, 100] },
+        { "ordem": 5, "raridade": "Superior", "valores": [100, 200] },
+        { "ordem": 6, "raridade": "Lendário", "valores": [200, 400] },
+        { "ordem": 7, "raridade": "Divino", "valores": [400, 700] },
+        { "ordem": 8, "raridade": "Místico", "valores": [700, 1650] },
+        { "ordem": 9, "raridade": "Celestial", "valores": [700, 1300] },
+        { "ordem": 10, "raridade": "Transcendente", "valores": [1300, 1700] },
+        { "ordem": 11, "raridade": "Guardião", "valores": [1700, 1900] },
+        { "ordem": 12, "raridade": "Criador", "valores": [1900, 2500] }
+      ],
+      limite_bonus: { 
+        "Inferior": 50, "Comum": 50, "Incomum": 80, "Avançado": 100, "Superior": 150, 
+        "Lendário": 200, "Divino": 300, "Celestial": 500, "Transcendente": 1000, 
+        "Guardião": 9999, "Criador": 9999 
+      }
+    }
+  });
 
-  // --- 2. PROGRESSÃO PADRÃO ---
-  const progressaoPadrao = [
-    { classe: 'Inferior',      nivel_min: 1,    nivel_max: 10,   ordem: 1  },
-    { classe: 'Comum',         nivel_min: 10,   nivel_max: 20,   ordem: 2  },
-    { classe: 'Incomum',       nivel_min: 20,   nivel_max: 50,   ordem: 3  },
-    { classe: 'Avançado',      nivel_min: 50,   nivel_max: 100,  ordem: 4  },
-    { classe: 'Superior',      nivel_min: 100,  nivel_max: 150,  ordem: 5  },
-    { classe: 'Lendário',      nivel_min: 150,  nivel_max: 300,  ordem: 6  },
-    { classe: 'Divino',        nivel_min: 300,  nivel_max: 320,  ordem: 7  },
-    { classe: 'Místico',       nivel_min: 320,  nivel_max: 400,  ordem: 8  },
-    { classe: 'Celestial',     nivel_min: 400,  nivel_max: 600,  ordem: 9  },
-    { classe: 'Transcendente', nivel_min: 600,  nivel_max: 650,  ordem: 10 },
-    { classe: 'Guardião',      nivel_min: 650,  nivel_max: 1000, ordem: 11 },
-    { classe: 'Criador',       nivel_min: 1000, nivel_max: 1000, ordem: 12 },
-  ]
+  // Sistema de Demônios (ID: 2)
+  const sistemaDemonios = await prisma.sistemas.upsert({
+    where: { id: 2 },
+    update: {},
+    create: {
+      id: 2,
+      nome: 'Demônios',
+      progressao: [
+        { "ordem": 1, "raridade": "Inferior", "valores": [40, 90] },
+        { "ordem": 2, "raridade": "Bestial", "valores": [90, 180] },
+        { "ordem": 3, "raridade": "Combatente", "valores": [180, 350] },
+        { "ordem": 4, "raridade": "Oculta", "valores": [350, 600] },
+        { "ordem": 5, "raridade": "Superior", "valores": [600, 1100] },
+        { "ordem": 6, "raridade": "Desastre", "valores": [1100, 1600] },
+        { "ordem": 7, "raridade": "Primordial", "valores": [1800, 2500] }
+      ],
+      limite_bonus: { 
+        "Inferior": 80, "Bestial": 120, "Combatente": 180, 
+        "Oculta": 250, "Superior": 400, "Desastre": 750, "Primordial": 2000 
+      }
+    }
+  });
 
-  // --- 3. PROGRESSÃO DEMÔNIOS ---
-  const progressaoDemonios = [
-    { classe: 'Inferior',    nivel_min: 50,  nivel_max: 100,  ordem: 1 },
-    { classe: 'Bestial',     nivel_min: 100, nivel_max: 200,  ordem: 2 },
-    { classe: 'Combatente',  nivel_min: 200, nivel_max: 350,  ordem: 3 },
-    { classe: 'Oculta',      nivel_min: 350, nivel_max: 500,  ordem: 4 },
-    { classe: 'Superior',    nivel_min: 500, nivel_max: 700,  ordem: 5 },
-    { classe: 'Desastre',    nivel_min: 600, nivel_max: 900,  ordem: 6 },
-    { classe: 'Primordial',  nivel_min: 900, nivel_max: 1500, ordem: 7 },
-  ]
+  console.log('✅ Sistemas cadastrados ou atualizados!');
 
-  // --- 4. BÔNUS PADRÃO ---
-  const bonusPadrao = [
-    { classe: 'Inferior',      limite_pct: 50   },
-    { classe: 'Comum',         limite_pct: 50   },
-    { classe: 'Incomum',       limite_pct: 80   },
-    { classe: 'Avançado',      limite_pct: 100  },
-    { classe: 'Superior',      limite_pct: 150  },
-    { classe: 'Lendário',      limite_pct: 200  },
-    { classe: 'Divino',        limite_pct: 300  },
-    { classe: 'Místico',       limite_pct: 400  },
-    { classe: 'Celestial',     limite_pct: 500  },
-    { classe: 'Transcendente', limite_pct: 1000 },
-    { classe: 'Guardião',      limite_pct: 9999 },
-    { classe: 'Criador',       limite_pct: 9999 },
-  ]
+  // ==========================================
+  // 2. CADASTRO DAS RAÇAS
+  // ==========================================
+  const dadosRacas = [
+    { nome: 'Demônios',   base: 15, limite: 5,  sistema_id: 2 }, // Sistema Demônios
+    { nome: 'Dragões',    base: 20, limite: 5,  sistema_id: 1 }, // Sistema Erion
+    { nome: 'Fadas',      base: 16, limite: 4,  sistema_id: 1 },
+    { nome: 'Vampiros',   base: 12, limite: 8,  sistema_id: 1 },
+    { nome: 'Lobisomens', base: 12, limite: 8,  sistema_id: 1 },
+    { nome: 'Elfos',      base: 9,  limite: 11, sistema_id: 1 },
+    { nome: 'Anões',      base: 9,  limite: 11, sistema_id: 1 },
+    { nome: 'Gigantes',   base: 8,  limite: 12, sistema_id: 1 },
+    { nome: 'Marines',    base: 5,  limite: 15, sistema_id: 1 },
+    { nome: 'Ferais',     base: 5,  limite: 15, sistema_id: 1 },
+    { nome: 'Humanos',    base: 1,  limite: 19, sistema_id: 1 }
+  ];
 
-  console.log('🌱 Iniciando seed das raças...')
+  console.log('⏳ Inserindo raças...');
 
-  for (const racaData of racasData) {
-    // Cria ou atualiza a raça
-    const raca = await prisma.racas.upsert({
-      where:  { nome: racaData.nome },
-      update: racaData,
-      create: racaData
-    })
+  // Como o model 'racas' não possui um campo @unique em 'nome', faremos a busca manual
+  // para decidir se cria ou pula/atualiza, evitando duplicar dados ao rodar o seed novamente.
+  for (const raca of dadosRacas) {
+    const racaExistente = await prisma.racas.findFirst({
+      where: { nome: raca.nome }
+    });
 
-    // Define qual progressão usar
-    const progressao = racaData.tipo_progressao === 'demonios'
-      ? progressaoDemonios
-      : progressaoPadrao
-
-    // Define qual bônus usar (demônios usam padrão por enquanto)
-    const bonus = bonusPadrao
-
-    // Limpa progressões e bônus antigos
-    await prisma.progressoes.deleteMany({ where: { raca_id: raca.id } })
-    await prisma.bonus_limites.deleteMany({ where: { raca_id: raca.id } })
-
-    // Insere progressões
-    await prisma.progressoes.createMany({
-      data: progressao.map(p => ({ ...p, raca_id: raca.id }))
-    })
-
-    // Insere bônus
-    await prisma.bonus_limites.createMany({
-      data: bonus.map(b => ({ ...b, raca_id: raca.id }))
-    })
-
-    console.log(`✅ ${raca.nome} — progressão: ${racaData.tipo_progressao}`)
+    if (racaExistente) {
+      // Se já existe, atualiza os valores
+      await prisma.racas.update({
+        where: { id: racaExistente.id },
+        data: {
+          base: raca.base,
+          limite: raca.limite,
+          sistema_id: raca.sistema_id
+        }
+      });
+    } else {
+      // Se não existe, cria do zero
+      await prisma.racas.create({
+        data: {
+          nome: raca.nome,
+          base: raca.base,
+          limite: raca.limite,
+          sistema_id: raca.sistema_id,
+          mundo: 'Geral' // Valor default do seu schema
+        }
+      });
+    }
   }
 
-  console.log('\n🎉 Seed concluído com sucesso!')
+  console.log('✅ Todas as raças foram cadastradas com sucesso!');
 }
 
 main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect())
+  .catch((e) => {
+    console.error('❌ Erro durante o seed:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

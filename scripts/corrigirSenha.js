@@ -4,18 +4,25 @@ import bcrypt from 'bcrypt'
 const prisma = new PrismaClient()
 
 async function main() {
-  // Troque 'admin' pelo seu login e 'suasenha' pela sua senha atual
   const login = 'gustavoadm'
   const novaSenha = '*A552408s'
 
   const hash = await bcrypt.hash(novaSenha, 10)
 
-  const usuario = await prisma.tb_usuario.update({
+  // O upsert garante que se não existir, ele cria!
+  const usuario = await prisma.usuarios.upsert({
     where: { login },
-    data: { senha: hash }
+    update: { 
+      senha: hash 
+    },
+    create: {
+      login,
+      senha: hash,
+      nivel_acesso: 1 // Garante o nível de acesso 1 para ser ADM
+    }
   })
 
-  console.log('✅ Senha atualizada com hash para:', usuario.login)
+  console.log(`✅ Sucesso! O usuário "${usuario.login}" foi criado ou teve sua senha atualizada com hash.`)
 }
 
 main()
