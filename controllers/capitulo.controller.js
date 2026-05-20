@@ -42,55 +42,31 @@ const capituloController = {
     }
   },
 
-    async show(req, res) {
+  async show(req, res) {
     try {
       const { id } = req.params;
 
+      // Validação: Se o ID não existir ou não for um número válido
+      if (!id || isNaN(Number(id))) {
+        return res.status(400).json({ message: 'ID do capítulo é inválido ou não foi fornecido.' });
+      }
+
       const capitulo = await prisma.capitulos.findUnique({
-        where: { id: Number(id) },
+        where: { id: Number(id) }, // Agora garantimos que isso é um número real
         include: {
-          parent: true, 
+          parent: true,
           children: { orderBy: { numero: 'asc' } }
         }
       });
 
       if (!capitulo) return res.status(404).json({ message: 'Capítulo não encontrado' });
 
-      // 1. Lógica de Herança
-      let rawParticipantes = capitulo.personagens_participantes;
-      if ((!rawParticipantes || (Array.isArray(rawParticipantes) && rawParticipantes.length === 0)) && capitulo.parent) {
-        rawParticipantes = capitulo.parent.personagens_participantes;
-      }
-
-      const listaBruta = Array.isArray(rawParticipantes) ? rawParticipantes : [];
-      
-      // 2. Extração de IDs (Suporta tanto [1, 2] quanto [{id: 1}, {id: 2}])
-      const idsNumericos = listaBruta.map(item => {
-        if (typeof item === 'number') return item;
-        if (item && typeof item === 'object' && item.id) return Number(item.id);
-        return null;
-      }).filter(id => id !== null && !isNaN(id));
-
-      let personagensVinculados = [];
-
-      if (idsNumericos.length > 0) {
-        personagensVinculados = await prisma.personagens.findMany({
-          where: { id: { in: idsNumericos } },
-          select: { 
-            id: true, 
-            nome: true, 
-            imagemRosto: true,
-            // Adicionei o campo 'sexo' se ele existir no seu model para as cores do editor
-            // sexo: true 
-          }
-        });
-      }
+      // ... restante da sua lógica de herança e personagens ...
 
       res.json(toJSON({
         ...capitulo,
         personagens_detalhes: personagensVinculados
       }));
-
     } catch (error) {
       console.error("❌ Erro no show do capítulo:", error);
       handleError(error, res);
@@ -103,6 +79,41 @@ const capituloController = {
       const capitulo = await prisma.capitulos.create({ data: validatedData });
       res.status(201).json(toJSON(capitulo));
     } catch (error) {
+      handleError(error, res);
+    }
+  },
+
+  async listarRecentes(req, res) {
+    try {
+      const capitulosRecentes = await prisma.capitulos.findMany({
+        take: 3,
+        // Removi o filtro de parent_id para garantir que os ÚLTIMOS 3 cadastros apareçam, 
+        // independente de serem capítulos ou subcapítulos.
+        orderBy: {
+          id: 'desc'
+        },
+        include: {
+          livros: {
+            select: {
+              titulo: true,
+              data_publicacao: true
+            }
+          }
+        }
+      });
+
+      // Mapeamento com fallback para campos nulos
+      const resultadoFormatado = capitulosRecentes.map(cap => ({
+        id: cap.id,
+        titulo: cap.titulo || "Sem título",
+        numero: cap.numero,
+        livro: cap.livros?.titulo || "Crônica Isolada",
+        data: cap.livros?.data_publicacao || null
+      }));
+
+      return res.json(toJSON(resultadoFormatado));
+    } catch (error) {
+      console.error("❌ Erro ao buscar últimas crônicas:", error);
       handleError(error, res);
     }
   },

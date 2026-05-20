@@ -24,14 +24,22 @@ const router = Router();
 
 // 🔑 Autenticação - CORRIGIDO para /api/auth/login
 // Removi o '/public' do caminho da URL, mas mantive o import da pasta public
-router.use('/auth', authRoutes); 
+router.use('/auth', authRoutes);
 
 // 📍 sagas
 router.use('/sagas', sagaspublic);
 router.use('/private/sagas', sagasprivate);
 
+// 📖 Livro
+router.use('/livros', livropublic);
+router.use('/private/livros', livroprivate);
+
+// 📄 Capitulo
+router.use('/capitulos', capitulopublic);
+router.use('/private/capitulos', capituloprivate);
+
 // 👥 Personagens
-router.use('/personagens', personagempublic); // Acessível via /api/personagens
+router.use('/personagens', personagempublic);
 router.use('/private/personagens', personagemprivate);
 
 // 🧌 Racas
@@ -45,14 +53,6 @@ router.use('/private/sistemas', sistemaprivate);
 // 📜 Histórico
 router.use('/historicos', historicopublic);
 router.use('/private/historicos', historicoprivate);
-
-// 📖 Livro
-router.use('/livros', livropublic);
-router.use('/private/livros', livroprivate);
-
-// 📄 Capitulo
-router.use('/capitulos', capitulopublic);
-router.use('/private/capitulos', capituloprivate);
 
 // ⚔️ Itens
 router.use('/itens', itempublic);
