@@ -3,7 +3,7 @@ import { ZodError } from 'zod';
 import { Prisma } from '@prisma/client';
 import capituloSchema from '../validator/capitulo.validator.js';
 
-// Utilitário para BigInt (Caso outras tabelas usem, mantemos por segurança)
+// Utilitário para BigInt
 const toJSON = (obj) => JSON.parse(JSON.stringify(obj, (key, value) =>
   typeof value === 'bigint' ? value.toString() : value
 ));
@@ -46,13 +46,12 @@ const capituloController = {
     try {
       const { id } = req.params;
 
-      // Validação: Se o ID não existir ou não for um número válido
       if (!id || isNaN(Number(id))) {
         return res.status(400).json({ message: 'ID do capítulo é inválido ou não foi fornecido.' });
       }
 
       const capitulo = await prisma.capitulos.findUnique({
-        where: { id: Number(id) }, // Agora garantimos que isso é um número real
+        where: { id: Number(id) },
         include: {
           parent: true,
           children: { orderBy: { numero: 'asc' } }
@@ -61,7 +60,31 @@ const capituloController = {
 
       if (!capitulo) return res.status(404).json({ message: 'Capítulo não encontrado' });
 
-      // ... restante da sua lógica de herança e personagens ...
+      // RESGATE AUTOMÁTICO DE PERSONAGENS VINCULADOS AO JSON:
+      let personagensVinculados = [];
+
+      if (capitulo.conteudo_json && Array.isArray(capitulo.conteudo_json)) {
+        const idsPersonagens = [
+          ...new Set(
+            capitulo.conteudo_json
+              .filter(bloco => bloco.personagem_id)
+              .map(bloco => Number(bloco.personagem_id))
+          )
+        ];
+
+        if (idsPersonagens.length > 0) {
+          personagensVinculados = await prisma.personagens.findMany({
+            where: {
+              id: { in: idsPersonagens }
+            },
+            select: {
+              id: true,
+              nome: true,
+              imagemRosto: true // Removido o campo 'sexo' que causava a quebra
+            }
+          });
+        }
+      }
 
       res.json(toJSON({
         ...capitulo,
@@ -87,8 +110,6 @@ const capituloController = {
     try {
       const capitulosRecentes = await prisma.capitulos.findMany({
         take: 3,
-        // Removi o filtro de parent_id para garantir que os ÚLTIMOS 3 cadastros apareçam, 
-        // independente de serem capítulos ou subcapítulos.
         orderBy: {
           id: 'desc'
         },
@@ -102,7 +123,6 @@ const capituloController = {
         }
       });
 
-      // Mapeamento com fallback para campos nulos
       const resultadoFormatado = capitulosRecentes.map(cap => ({
         id: cap.id,
         titulo: cap.titulo || "Sem título",
@@ -131,32 +151,31 @@ const capituloController = {
       handleError(error, res);
     }
   },
-  // 🚀 ADICIONE ESTE MÉTODO AGORA:
+
   async updateConteudo(req, res) {
     try {
       const { id } = req.params;
-      const { blocos } = req.body; // O array de blocos vindo do editor
+      const { blocos } = req.body;
 
-      // Validamos se o ID é um número
       if (!id) return res.status(400).json({ message: 'ID do capítulo é obrigatório' });
 
       const capitulo = await prisma.capitulos.update({
         where: { id: Number(id) },
         data: {
-          conteudo_json: blocos // Salva o array no novo campo JSON
+          conteudo_json: blocos
         }
       });
 
       return res.json(toJSON(capitulo));
     } catch (error) {
       console.error('Erro ao atualizar conteúdo JSON:', error);
-      // Se o erro for do Prisma (registro não encontrado)
       if (error.code === 'P2025') {
         return res.status(404).json({ message: 'Capítulo não encontrado' });
       }
       return res.status(500).json({ message: 'Erro interno ao salvar conteúdo' });
     }
   },
+
   async destroy(req, res) {
     try {
       const { id } = req.params;
