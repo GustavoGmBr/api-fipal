@@ -46,17 +46,36 @@ const capituloController = {
     try {
       const { id } = req.params;
 
-      if (!id || isNaN(Number(id))) {
-        return res.status(400).json({ message: 'ID do capítulo é inválido ou não foi fornecido.' });
+      if (!id) {
+        return res.status(400).json({ message: 'ID ou identificador do capítulo não foi fornecido.' });
       }
 
-      const capitulo = await prisma.capitulos.findUnique({
-        where: { id: Number(id) },
-        include: {
-          parent: true,
-          children: { orderBy: { numero: 'asc' } }
-        }
-      });
+      let capitulo;
+
+      // 🌟 MELHORIA: Permite buscar o capítulo tanto por ID (Numérico) quanto por Slug/Nome na URL
+      if (!isNaN(Number(id))) {
+        capitulo = await prisma.capitulos.findUnique({
+          where: { id: Number(id) },
+          include: {
+            parent: true,
+            children: { orderBy: { numero: 'asc' } }
+          }
+        });
+      } else {
+        // Caso seu banco use o campo 'slug' ou 'nome' para busca amigável no banco
+        capitulo = await prisma.capitulos.findFirst({
+          where: { 
+            OR: [
+              { slug: id },
+              { titulo: id } // Fallback caso busque pelo título exato
+            ]
+          },
+          include: {
+            parent: true,
+            children: { orderBy: { numero: 'asc' } }
+          }
+        });
+      }
 
       if (!capitulo) return res.status(404).json({ message: 'Capítulo não encontrado' });
 
@@ -64,11 +83,17 @@ const capituloController = {
       let personagensVinculados = [];
 
       if (capitulo.conteudo_json && Array.isArray(capitulo.conteudo_json)) {
+        // 🌟 CORRIGIDO: Busca de forma inteligente tanto na raiz do bloco quanto dentro do objeto 'conteudo'
         const idsPersonagens = [
           ...new Set(
             capitulo.conteudo_json
-              .filter(bloco => bloco.personagem_id)
-              .map(bloco => Number(bloco.personagem_id))
+              .map(bloco => {
+                const idRaiz = bloco.personagem_id;
+                const idConteudo = bloco.conteudo?.personagem_id;
+                return idRaiz || idConteudo;
+              })
+              .filter(idObj => idObj && !isNaN(Number(idObj)))
+              .map(idObj => Number(idObj))
           )
         ];
 
@@ -80,7 +105,7 @@ const capituloController = {
             select: {
               id: true,
               nome: true,
-              imagemRosto: true // Removido o campo 'sexo' que causava a quebra
+              imagemRosto: true
             }
           });
         }

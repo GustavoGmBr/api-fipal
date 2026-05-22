@@ -4,13 +4,13 @@ import { ZodError } from 'zod';
 
 const store = async (req, res) => {
   try {
-    // Agora 'rest' contém: equipamento, habilidades, elementos, etc.
+    // 'rest' contém: equipamento, habilidades, elementos, bonusPCErion, bonusPCAetheris, etc.
     const { inventario, ...rest } = historicoSchema.parse(req.body);
 
     const historico = await prisma.personagem_historico.create({
       data: {
         ...rest,
-        // O Prisma lida com o array de habilidades vindo no 'rest' como JSON
+        // O Prisma grava arrays/objetos (como habilidades e elementos) diretamente como JSON
         inventario: {
           create: inventario || [] 
         }
@@ -37,8 +37,7 @@ const update = async (req, res) => {
         where: { historico_id: historicoId }
       });
 
-      // 2. Atualiza o histórico e recria o inventário
-      // O campo 'habilidades' dentro de 'rest' substituirá o JSON antigo no banco
+      // 2. Atualiza o histórico (incluindo os novos bônus em 'rest') e recria o inventário
       return await tx.personagem_historico.update({
         where: { id: historicoId },
         data: {

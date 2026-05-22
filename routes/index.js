@@ -20,6 +20,8 @@ import sagaspublic from './public/saga.routes.js';
 import sagasprivate from './private/saga.routes.js';
 import inventariopublic from './public/inventario.routes.js';
 import inventarioprivate from './private/inventario.routes.js';
+import formasPublic from './public/personagemForma.routes.js';
+import formasPrivate from './private/personagemForma.routes.js';
 const router = Router();
 
 // 🔑 Autenticação - CORRIGIDO para /api/auth/login
@@ -41,6 +43,10 @@ router.use('/private/capitulos', capituloprivate);
 // 👥 Personagens
 router.use('/personagens', personagempublic);
 router.use('/private/personagens', personagemprivate);
+
+// Dentro do seu arquivo principal de rotas:
+router.use('/formas', formasPublic);
+router.use('/private/formas', formasPrivate);
 
 // 🧌 Racas
 router.use('/racas', racapublic);

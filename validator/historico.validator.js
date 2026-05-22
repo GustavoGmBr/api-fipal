@@ -4,45 +4,33 @@ export const historicoSchema = z.object({
   personagem_id: z.coerce.number({ invalid_type_error: "ID do personagem inválido" }),
   raca_id: z.coerce.number({ invalid_type_error: "ID da raça inválido" }),
 
-  livro_id: z.coerce.number().optional().nullable(),
-  capitulo_id: z.coerce.number().optional().nullable(),
+  // Aceita strings vazias vindas de selects do HTML e converte para null (idêntico ao banco)
+  livro_id: z.preprocess((val) => (val === "" || val === null ? null : val), z.coerce.number().nullable().optional()),
+  capitulo_id: z.preprocess((val) => (val === "" || val === null ? null : val), z.coerce.number().nullable().optional()),
 
-  subnivel: z.coerce.number().default(0),
-  qtd_treino: z.coerce.number().default(0),
-  ponto_combate: z.coerce.number().default(0),
-  ponto_combateAetheris: z.coerce.number().default(0),
+  idade: z.string().nullable().optional(),
+  titulo: z.string().nullable().optional(),
+  ranque: z.string().nullable().optional(),
+  classificacao: z.string().nullable().optional(),
+  classes: z.string().nullable().optional(),
+  estilo_luta: z.string().nullable().optional(),
+  maestria: z.string().nullable().optional(),
 
-  idade: z.string().optional().nullable(),
-  titulo: z.string().optional().nullable(),
-  ranque: z.string().optional().nullable(),
-  classificacao: z.string().optional().nullable(),
-  classes: z.string().optional().nullable(),
-  estilo_luta: z.string().optional().nullable(),
-  maestria: z.string().optional().nullable(),
-  nivel: z.number().int().default(1),
+  // Força a conversão para número e aceita o padrão 0 vindo do seu formulário
+  subnivel: z.coerce.number().int().default(0),
+  nivel: z.coerce.number().int().default(0), 
+  xpAtual: z.coerce.number().int().default(0),
+  xpProximo: z.coerce.number().int().default(100),
+  qtd_treino: z.coerce.number().int().default(0),
+  ponto_combate: z.coerce.number().int().default(0),
+  ponto_combateAetheris: z.coerce.number().int().default(0),
+  bonusPCErion: z.coerce.number().int().default(0),
 
-  xpAtual: z.number().int().default(0),
-  xpProximo: z.number().int().default(0),
+  // Campos definidos como Json? no seu schema do banco
+  elementos: z.any().optional().nullable(),
+  equipamento: z.any().optional().nullable(),
+  habilidades: z.any().optional().nullable(),
 
-  elementos: z.any().optional(),
-  equipamento: z.any().optional(),
-
-  // ✅ Novo campo: habilidades
-  // Definido como array de objetos para manter um padrão no banco
-  habilidades: z.array(
-    z.object({
-      nome: z.string().min(1, "O nome da habilidade é obrigatório"),
-      descricao: z.string().min(1, "A descrição da habilidade é obrigatória")
-    })
-  ).optional().default([]),
-
-  inventario: z.array(
-    z.object({
-      itensId_item: z.coerce.number(),
-      nome: z.string(),
-      tipo: z.string().optional().nullable(),
-      subtipo: z.string().optional().nullable(),
-      quantidade: z.coerce.number().min(0.01).default(1)
-    })
-  ).optional().default([])
+  // Como no banco é uma tabela relacionada (inventarios[]), deixamos opcional para o validador principal
+  inventario: z.array(z.any()).optional().default([])
 });

@@ -26,6 +26,7 @@ model livros {
   capitulos            capitulos[]
   saga                 sagas?                 @relation(fields: [saga_id], references: [id])
   personagemHistoricos personagem_historico[]
+  personagemFormas     personagem_forma[]
 
   @@index([saga_id], map: "livros_saga_id_fkey")
   @@map("livros")
@@ -45,6 +46,7 @@ model capitulos {
   parent                    capitulos?             @relation("SubCapitulos", fields: [parent_id], references: [id], onDelete: Cascade)
   children                  capitulos[]            @relation("SubCapitulos")
   personagemHistoricos      personagem_historico[]
+  personagemFormas          personagem_forma[]
 
   @@index([livro_id], map: "livro_id")
   @@index([parent_id], map: "parent_id")
@@ -87,6 +89,7 @@ model personagens {
   criado_em           DateTime               @default(now())
   atualizado_em       DateTime               @updatedAt
   historicos          personagem_historico[]
+  formas              personagem_forma[] // <--- ADICIONE ESTA LINHA AQUI
 
   @@map("personagens")
 }
@@ -115,6 +118,7 @@ model personagem_historico {
   equipamento           Json?
   habilidades           Json?
   criado_em             DateTime      @default(now())
+  bonusPCErion          Int           @default(0)
   inventario            inventarios[]
   capitulo              capitulos?    @relation(fields: [capitulo_id], references: [id])
   livro                 livros?       @relation(fields: [livro_id], references: [id])
@@ -126,6 +130,32 @@ model personagem_historico {
   @@index([livro_id], map: "personagem_historico_livro_id_fkey")
   @@index([raca_id], map: "personagem_historico_raca_id_fkey")
   @@map("personagem_historico")
+}
+
+model personagem_forma {
+  id            Int  @id @default(autoincrement())
+  personagem_id Int
+  livro_id      Int?
+  capitulo_id   Int?
+
+  nome        String // Ex: "Forma Demoníaca", "Despertar Divino"
+  descricao   String? @db.Text
+  bonusPC     Float   @default(0.0) // Porcentagem de bônus (ex: 15.5 para +15.5% de PC)
+  imagemRosto String? // URL da imagem de rosto da transformação
+  imagemCorpo String? // URL da imagem de corpo da transformação
+
+  criado_em     DateTime @default(now())
+  atualizado_em DateTime @updatedAt
+
+  // Relações (Foreign Keys)
+  personagem personagens @relation(fields: [personagem_id], references: [id], onDelete: Cascade)
+  capitulo   capitulos?  @relation(fields: [capitulo_id], references: [id])
+  livro      livros?     @relation(fields: [livro_id], references: [id])
+
+  @@index([personagem_id])
+  @@index([capitulo_id])
+  @@index([livro_id])
+  @@map("personagem_formas")
 }
 
 model inventarios {
