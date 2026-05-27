@@ -42,7 +42,7 @@ app.use((req, res) => {
   res.status(404).json({ error: `Rota ${req.method} ${req.url} não encontrada no servidor.` });
 });
 
-const port = process.env.PORT || 3333;
+const port = process.env.PORT || 3334;
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
 });
