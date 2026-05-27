@@ -1,14 +1,14 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { uploadFotosVeiculo, uploadPericiaVeiculo } from '../config/uploadVeiculo.js';
 
 const router = Router();
 
 /**
- * POST /api/upload/veiculo/fotos
+ * POST /uploadVeiculo/veiculo/fotos
  * Body: { identificador: "Onix_ABC1D23" } + campo "fotos" (multiple)
- * Salva em: /public/images/veiculos/Onix_ABC1D23/fotos/
  */
-router.post('/upload/veiculo/fotos', (req, res) => {
+router.post('/veiculo/fotos', (req, res) => {
   uploadFotosVeiculo.array('fotos', 10)(req, res, (err) => {
     if (err) {
       const message = err instanceof multer.MulterError ? err.message : err.message;
@@ -29,11 +29,10 @@ router.post('/upload/veiculo/fotos', (req, res) => {
 });
 
 /**
- * POST /api/upload/veiculo/pericia
+ * POST /uploadVeiculo/veiculo/pericia
  * Body: { identificador: "Onix_ABC1D23" } + campo "pericia" (PDF único)
- * Salva em: /public/images/veiculos/Onix_ABC1D23/pericia.pdf
  */
-router.post('/upload/veiculo/pericia', (req, res) => {
+router.post('/veiculo/pericia', (req, res) => {
   uploadPericiaVeiculo.single('pericia')(req, res, (err) => {
     if (err) {
       const message = err instanceof multer.MulterError ? err.message : err.message;
@@ -55,23 +54,21 @@ router.post('/upload/veiculo/pericia', (req, res) => {
 });
 
 /**
- * POST /api/upload/veiculo/completo
+ * POST /uploadVeiculo/veiculo/completo
  * Faz upload de fotos + perícia em uma única chamada
  */
-router.post('/upload/veiculo/completo', (req, res, next) => {
+router.post('/veiculo/completo', (req, res, next) => {
   const { identificador } = req.body;
 
   if (!identificador) {
     return res.status(400).json({ success: false, error: 'identificador é obrigatório' });
   }
 
-  // Primeiro faz upload do PDF (perícia)
   uploadPericiaVeiculo.single('pericia')(req, res, (err) => {
     if (err) {
       return res.status(400).json({ success: false, error: `Erro na perícia: ${err.message}` });
     }
 
-    // Depois faz upload das fotos
     uploadFotosVeiculo.array('fotos', 10)(req, res, (err2) => {
       if (err2) {
         return res.status(400).json({ success: false, error: `Erro nas fotos: ${err2.message}` });

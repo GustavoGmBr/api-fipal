@@ -6,7 +6,8 @@ import upload from '../config/upload.js';
 
 const router = Router();
 
-router.post('/upload', (req, res) => {
+// Mudei de '/upload' para '/' porque o index já monta em '/upload'
+router.post('/', (req, res) => {
   upload.single('foto')(req, res, (err) => {
     if (err) {
       const message =
@@ -20,7 +21,6 @@ router.post('/upload', (req, res) => {
       return res.status(400).json({ success: false, error: 'Nenhuma imagem enviada' });
     }
 
-    // Define o nome correto do arquivo com base no body (já disponível aqui)
     const nome = req.body.nome
       ? req.body.nome
           .toLowerCase()
@@ -33,7 +33,6 @@ router.post('/upload', (req, res) => {
     const novoNome = `${nome}${ext}`;
     const novoPath = path.join(req.file.destination, novoNome);
 
-    // Renomeia o arquivo para o nome correto
     if (req.file.filename !== novoNome) {
       try {
         fs.renameSync(req.file.path, novoPath);
