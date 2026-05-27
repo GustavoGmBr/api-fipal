@@ -35,18 +35,19 @@ app.get('/', (req, res) => {
   });
 });
 
-// ✅ Montagem das rotas (Duplicado para aceitar com ou sem o prefixo /api da VPS)
+// ... seus imports normais acima
+
+// ✅ Montagem das rotas limpa e unificada
 app.use('/api', router);
+app.use('/', router); // Fallback indispensável para a VPS
 
-
-// Fallback para quando o proxy da VPS remove o prefixo /api
-app.use('/', router);
-
-// ✅ Tratamento de rotas não encontradas (Ajuda a diagnosticar o 404)
+// ✅ Tratamento de rotas não encontradas
 app.use((req, res) => {
   console.log(`⚠️ Rota não encontrada: ${req.method} ${req.url}`);
   res.status(404).json({ error: `Rota ${req.method} ${req.url} não encontrada no servidor.` });
 });
+
+// ... restando do seu listen na porta 3334
 
 const port = process.env.PORT || 3334;
 app.listen(port, () => {
