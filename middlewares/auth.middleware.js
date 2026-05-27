@@ -1,27 +1,37 @@
 import jwt from 'jsonwebtoken';
 
-const authMiddleware = (req, res, next) => {
+export const loginRequired = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
+  // 1. Verifica se o header de autorização foi enviado
   if (!authHeader) {
-    console.log('⚠️ Tentativa de acesso sem token');
-    return res.status(401).json({ error: 'Token não fornecido' });
+    return res.status(401).json({ message: 'Token não fornecido.' });
   }
 
-  const [, token] = authHeader.split(' ');
+  // 2. O formato esperado é: "Bearer TOKEN_AQUI"
+  const parts = authHeader.split(' ');
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_fallback');
-    
-    // ✅ Injeta os dados do usuário na requisição para uso nos controllers
-    req.usuarioId = decoded.id;
-    req.nivelAcesso = decoded.nivel;
-    
-    return next();
-  } catch (err) {
-    console.error('❌ Erro na validação do Token:', err.message);
-    return res.status(401).json({ error: 'Token inválido ou expirado' });
+  if (parts.length !== 2) {
+    return res.status(401).json({ message: 'Erro no formato do token.' });
   }
+
+  const [scheme, token] = parts;
+
+  if (!/^Bearer$/i.test(scheme)) {
+    return res.status(401).json({ message: 'Token mal formatado.' });
+  }
+
+  // 3. Verifica e decodifica o token
+  jwt.verify(token, process.env.JWT_SECRET || 'secret_fallback', (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: 'Token inválido ou expirado.' });
+    }
+
+    // 4. Injeta o ID e o nível de acesso do usuário dentro da requisição (req)
+    // para que os controllers possam usar depois
+    req.userId = decoded.id;
+    req.userNivel = decoded.nivel_acesso;
+
+    return next(); // Tudo certo! Segue para o Controller
+  });
 };
-
-export default authMiddleware;
