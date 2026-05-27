@@ -5,7 +5,7 @@ const prisma = new PrismaClient()
 
 async function main() {
   const login = 'gustavoadm'
-  const novaSenha = '*A552408s'
+  const novaSenha = '552408'
 
   const hash = await bcrypt.hash(novaSenha, 10)
 
