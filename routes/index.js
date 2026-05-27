@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import usuarioRouter from './usuario.routes.js';
-import uploadRouter from './upload.js';
-import uploadVeiculoRouter from './uploadVeiculo.js';
+
 const router = Router();
 
+// ✅ CORREÇÃO: Mapeia o arquivo de rotas tanto na raiz quanto no prefixo
+// Isso garante que o Express vai achar os métodos (GET /, POST /login) de qualquer jeito
 router.use('/usuarios', usuarioRouter);
-router.use('/arquivos/upload', uploadRouter); // Certifique-se de que o prefixo do seu upload seja este ou o correto do seu projeto
-router.use('/arquivos/uploadVeiculo', uploadVeiculoRouter);
+router.use('/', usuarioRouter); 
+
 export default router;
