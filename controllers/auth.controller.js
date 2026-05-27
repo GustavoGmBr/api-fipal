@@ -162,3 +162,27 @@ export const deletar = async (req, res) => {
     return res.status(500).json({ message: "Erro interno no servidor." });
   }
 };
+// ==========================================
+// 6. LISTAR TODOS OS USUÁRIOS (READ ALL)
+// ==========================================
+export const listarTodos = async (req, res) => {
+  try {
+    // Busca todos os usuários ordenando pelo ID mais recente
+    const usuarios = await prisma.usuarios.findMany({
+      orderBy: {
+        id_usuario: 'desc'
+      },
+      select: {
+        id_usuario: true,
+        login: true,
+        nivel_acesso: true,
+        data_criacao: true
+      }
+    });
+
+    return res.status(200).json(usuarios);
+  } catch (error) {
+    console.error("Erro ao listar usuários:", error);
+    return res.status(500).json({ message: "Erro interno no servidor." });
+  }
+};
