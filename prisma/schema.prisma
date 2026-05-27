@@ -7,12 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model usuarios {
-  id_usuario   Int       @id @default(autoincrement())
-  login        String    @unique(map: "login") @db.VarChar(100)
-  senha        String    @db.VarChar(255)
-  nivel_acesso Int       @default(1)
-  data_criacao DateTime? @default(now()) @db.Timestamp(0)
-
-  @@map("usuarios")
+model Usuario {
+  id_usuario Int     @id @default(autoincrement())
+  login      String  @unique
+  senha      String
+  nome       String?
+  foto       String?   // ← URL da foto
+  nivel_acesso Int    @default(0)
+  data_criacao DateTime @default(now())
 }

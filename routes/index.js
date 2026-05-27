@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import usuarioRoutes from "./usuario.routes.js"; // 🛠️ Ajustado para o singular
+import usuarioRouter from './usuario.routes.js';
 
 const router = Router();
 
-router.use('/usuarios', usuarioRoutes);
+router.use('/usuarios', usuarioRouter);
 
 export default router;

@@ -3,11 +3,15 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 // Removi o import do axios, pois ele não estava sendo usado no index.js e pode causar erro de build se não estiver no package.json
 import router from './routes/index.js';
-
+import uploadRouter from './routes/upload.js';
+import uploadVeiculoRouter from './routes/uploadVeiculo.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 dotenv.config();
 
 const app = express();
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 // ✅ Configuração de CORS robusta
 app.use(cors({
   origin: '*', // Em produção, você pode trocar pelo link do seu front no Render
@@ -26,7 +30,7 @@ BigInt.prototype.toJSON = function () {
 
 // Rota de teste de saúde da API
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'online',
     message: 'Setimo Elemento API is running',
     timestamp: new Date().toISOString()
@@ -35,7 +39,8 @@ app.get('/', (req, res) => {
 
 // ✅ Montagem das rotas
 app.use('/api', router);
-
+app.use('/api', uploadRouter);
+app.use('/api', uploadVeiculoRouter);
 // ✅ Tratamento de rotas não encontradas (Ajuda a diagnosticar o 404)
 app.use((req, res) => {
   console.log(`⚠️ Rota não encontrada: ${req.method} ${req.url}`);
