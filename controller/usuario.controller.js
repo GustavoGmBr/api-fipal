@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 import { deleteFotoUsuario } from '../utils/deleteFiles.js';
 
-// Instancia direto aqui para termos certeza absoluta de que o Prisma vai funcionar
-const prisma = new PrismaClient();
 export const readAll = async (req, res) => {
   try {
     const usuarios = await prisma.usuario.findMany();
@@ -15,7 +13,9 @@ export const readAll = async (req, res) => {
 export const readById = async (req, res) => {
   try {
     const { id } = req.params;
-    const usuario = await prisma.usuario.findUnique({ where: { id: Number(id) } });
+    const usuario = await prisma.usuario.findUnique({
+      where: { id_usuario: Number(id) },
+    });
     if (!usuario) {
       return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
     }
@@ -49,7 +49,7 @@ export const update = async (req, res) => {
     // Se uma nova foto for enviada, deleta a antiga antes de atualizar
     if (foto !== undefined) {
       const usuarioAtual = await prisma.usuario.findUnique({
-        where: { id: Number(id) },
+        where: { id_usuario: Number(id) },
         select: { foto: true },
       });
 
@@ -61,7 +61,7 @@ export const update = async (req, res) => {
     }
 
     const usuario = await prisma.usuario.update({
-      where: { id: Number(id) },
+      where: { id_usuario: Number(id) },
       data,
     });
     return res.json({ success: true, data: usuario });
@@ -76,7 +76,7 @@ export const remove = async (req, res) => {
 
     // Busca o usuário antes de deletar para pegar a foto
     const usuario = await prisma.usuario.findUnique({
-      where: { id: Number(id) },
+      where: { id_usuario: Number(id) },
       select: { foto: true, nome: true },
     });
 
@@ -90,7 +90,7 @@ export const remove = async (req, res) => {
     }
 
     // Deleta o registro no banco
-    await prisma.usuario.delete({ where: { id: Number(id) } });
+    await prisma.usuario.delete({ where: { id_usuario: Number(id) } });
 
     return res.json({ success: true, message: 'Usuário removido' });
   } catch (error) {
