@@ -1,6 +1,8 @@
-import prisma from '../lib/prisma.js';
+import { PrismaClient } from '@prisma/client';
 import { deleteFotoUsuario } from '../utils/deleteFiles.js';
 
+// Instancia direto aqui para termos certeza absoluta de que o Prisma vai funcionar
+const prisma = new PrismaClient();
 export const readAll = async (req, res) => {
   try {
     const usuarios = await prisma.usuario.findMany();
