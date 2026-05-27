@@ -37,10 +37,15 @@ app.get('/', (req, res) => {
   });
 });
 
-// ✅ Montagem das rotas
+// ✅ Montagem das rotas (Duplicado para aceitar com ou sem o prefixo /api da VPS)
 app.use('/api', router);
 app.use('/api', uploadRouter);
 app.use('/api', uploadVeiculoRouter);
+
+// Fallback para quando o proxy da VPS remove o prefixo /api
+app.use('/', router);
+app.use('/', uploadRouter);
+app.use('/', uploadVeiculoRouter);
 // ✅ Tratamento de rotas não encontradas (Ajuda a diagnosticar o 404)
 app.use((req, res) => {
   console.log(`⚠️ Rota não encontrada: ${req.method} ${req.url}`);
