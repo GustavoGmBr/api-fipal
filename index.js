@@ -3,8 +3,6 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 // Removi o import do axios, pois ele não estava sendo usado no index.js e pode causar erro de build se não estiver no package.json
 import router from './routes/index.js';
-import uploadRouter from './routes/upload.js';
-import uploadVeiculoRouter from './routes/uploadVeiculo.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 dotenv.config();
@@ -39,13 +37,11 @@ app.get('/', (req, res) => {
 
 // ✅ Montagem das rotas (Duplicado para aceitar com ou sem o prefixo /api da VPS)
 app.use('/api', router);
-app.use('/api', uploadRouter);
-app.use('/api', uploadVeiculoRouter);
+
 
 // Fallback para quando o proxy da VPS remove o prefixo /api
 app.use('/', router);
-app.use('/', uploadRouter);
-app.use('/', uploadVeiculoRouter);
+
 // ✅ Tratamento de rotas não encontradas (Ajuda a diagnosticar o 404)
 app.use((req, res) => {
   console.log(`⚠️ Rota não encontrada: ${req.method} ${req.url}`);
