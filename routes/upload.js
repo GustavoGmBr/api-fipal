@@ -23,10 +23,10 @@ router.post('/', (req, res) => {
 
     const nome = req.body.nome
       ? req.body.nome
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/\s+/g, '_')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, '_')
       : `usuario_${Date.now()}`;
 
     const ext = path.extname(req.file.originalname);
@@ -41,11 +41,11 @@ router.post('/', (req, res) => {
       }
     }
 
-    const url = `/images/usuarios/${novoNome}`;
+    const url = `/images/usuarios/${req.file.filename}`;
 
     return res.json({
       success: true,
-      data: { url, filename: novoNome },
+      data: { url, filename: req.file.filename },
     });
   });
 });

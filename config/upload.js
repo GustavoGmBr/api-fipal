@@ -23,14 +23,15 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     const nome = req.body.nome
       ? req.body.nome
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/\s+/g, '_')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, '_')
       : `usuario_${Date.now()}`;
 
     const ext = path.extname(file.originalname);
-    cb(null, `${nome}${ext}`);
+    const timestamp = Date.now();
+    cb(null, `${nome}_${timestamp}${ext}`);  // "joao_1712345678901.jpg"
   },
 });
 

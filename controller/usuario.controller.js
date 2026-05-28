@@ -46,15 +46,21 @@ export const update = async (req, res) => {
     if (nome !== undefined) data.nome = nome;
     if (nivel_acesso !== undefined) data.nivel_acesso = nivel_acesso;
 
-    // Se uma nova foto for enviada, deleta a antiga antes de atualizar
+    // Se uma nova foto foi enviada
     if (foto !== undefined) {
       const usuarioAtual = await prisma.usuario.findUnique({
         where: { id_usuario: Number(id) },
         select: { foto: true },
       });
 
-      if (usuarioAtual?.foto) {
-        deleteFotoUsuario(usuarioAtual.foto);
+      // Só deleta a antiga se a URL MUDOU (ou seja, é uma foto nova mesmo)
+      if (usuarioAtual?.foto && usuarioAtual.foto !== foto) {
+        try {
+          deleteFotoUsuario(usuarioAtual.foto);
+        } catch (err) {
+          console.warn(`⚠️ Não foi possível deletar foto antiga: ${err.message}`);
+          // Não impede a edição de continuar
+        }
       }
 
       data.foto = foto;
