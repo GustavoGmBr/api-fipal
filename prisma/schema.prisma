@@ -8,11 +8,63 @@ datasource db {
 }
 
 model Usuario {
-  id_usuario Int     @id @default(autoincrement())
-  login      String  @unique
-  senha      String
-  nome       String?
-  foto       String?   // ← URL da foto
-  nivel_acesso Int    @default(0)
-  data_criacao DateTime @default(now())
+  id_usuario       Int      @id @default(autoincrement())
+  login            String   @unique
+  senha            String
+  nome             String?
+  foto             String?
+  nivel_acesso     Int      @default(0)
+  data_criacao     DateTime @default(now())
+  usados_criados   Usado[]  @relation("Criador")
+  usados_alterados Usado[]  @relation("Alterador")
+}
+
+model Usado {
+  id_usado            Int         @id @default(autoincrement())
+  marca               String
+  modelo              String
+  ano                 Int
+  cor                 String
+  placa               String      @unique
+  km_atual            Int
+  combustivel         Combustivel
+  pintura_metalica    Boolean     @default(false)
+  direcao             Direcao?
+  teto_solar          Boolean     @default(false)
+  ar_condicionado     Boolean     @default(false)
+  trava_eletrica      Boolean     @default(false)
+  retrovisor_eletrico Boolean     @default(false)
+  multimidia          Boolean     @default(false)
+  alarme              Boolean     @default(false)
+  rodas_liga_leve     Boolean     @default(false)
+  valor_fipe          Decimal     @db.Decimal(10, 2)
+  valor_venda         Decimal     @db.Decimal(10, 2)
+  observacao          String?     @db.Text
+  pericia             String?
+  fotos               Json
+  created_at          DateTime    @default(now())
+  created_by          Int
+  updated_at          DateTime?   @updatedAt
+  updated_by          Int?
+  codigoFipe          String?
+  criador             Usuario     @relation("Criador", fields: [created_by], references: [id_usuario])
+  alterador           Usuario?    @relation("Alterador", fields: [updated_by], references: [id_usuario])
+
+  @@index([created_by], map: "Usado_created_by_fkey")
+  @@index([updated_by], map: "Usado_updated_by_fkey")
+}
+
+enum Combustivel {
+  GASOLINA
+  ETANOL
+  FLEX
+  DIESEL
+  HIBRIDO
+  ELETRICO
+}
+
+enum Direcao {
+  ELETRICA
+  HIDRAULICA
+  MANUAL
 }

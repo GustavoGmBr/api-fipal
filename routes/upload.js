@@ -41,12 +41,11 @@ router.post('/', (req, res) => {
       }
     }
 
-    const url = `/images/usuarios/${req.file.filename}`;
-
+    const url = `/images/usuarios/${novoNome}`;
     return res.json({
       success: true,
-      data: { url, filename: req.file.filename },
-    });
+      data: { url, filename: novoNome }, // ← antes era req.file.filename
+    })
   });
 });
 
