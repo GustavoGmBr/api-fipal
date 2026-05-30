@@ -1,56 +1,50 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
-// Removi o import do axios, pois ele não estava sendo usado no index.js e pode causar erro de build se não estiver no package.json
-import router from './routes/index.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
-dotenv.config();
+import os from 'os'; // Módulo nativo, não caminho relativo
 
 const app = express();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-// ✅ Configuração de CORS robusta
-app.use(cors({
-  origin: '*', // Em produção, você pode trocar pelo link do seu front no Render
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-// ✅ Middleware para ler JSON (Obrigatório para receber dados do Postman/Front)
-app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // Adicionado para suportar diferentes formatos de requisição
-
-// ✅ Correção Global para BigInt (Essencial para o Prisma não quebrar no JSON.stringify)
-BigInt.prototype.toJSON = function () {
-  return this.toString();
-};
-
-// Rota de teste de saúde da API
-app.get('/', (req, res) => {
-  res.json({
-    status: 'online',
-    message: 'Setimo Elemento API is running',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// ... seus imports normais acima
-
-// ✅ Montagem das rotas limpa e unificada
-app.use('/api', router);
-app.use('/', router); // Fallback indispensável para a VPS
-
-// ✅ Tratamento de rotas não encontradas
-app.use((req, res) => {
-  console.log(`⚠️ Rota não encontrada: ${req.method} ${req.url}`);
-  res.status(404).json({ error: `Rota ${req.method} ${req.url} não encontrada no servidor.` });
-});
-
-// ... restando do seu listen na porta 3334
-
 const port = process.env.PORT || 3334;
-app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
+const host = '0.0.0.0'; // Escuta em todas as interfaces de rede
+
+// Middlewares
+app.use(cors());
+app.use(express.json());
+
+// Função para obter o IP da rede local (primeiro IPv4 não interno)
+function getLocalIP() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return '127.0.0.1'; // fallback
+}
+
+// Corrige serialização de BigInt para JSON (evita erro "BigInt não serializável")
+BigInt.prototype.toJSON = function () { return this.toString(); };
+
+// Rotas
+app.get('/', (req, res) => {
+  res.send('Servidor Express funcionando!');
 });
 
+// Rota /api de exemplo
+app.get('/api', (req, res) => {
+  res.json({ message: 'API online', timestamp: new Date().toISOString() });
+});
+
+// Handler 404 para rotas não encontradas
+app.use((req, res) => {
+  res.status(404).json({ error: 'Rota não encontrada' });
+});
+
+// Inicia o servidor em todas as interfaces
+app.listen(port, host, () => {
+  const localIP = getLocalIP();
+  console.log(`🚀 Servidor rodando em:`);
+  console.log(`   Local:    http://localhost:${port}`);
+  console.log(`   Network:  http://${localIP}:${port}`);
+});
