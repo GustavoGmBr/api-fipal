@@ -27,8 +27,19 @@ export const readById = async (req, res) => {
 
 export const create = async (req, res) => {
   try {
-    const { login, senha, nome, nivel_acesso, foto } = req.body;
-    const data = { login, senha, nome, nivel_acesso, foto };
+    // Adicionados email e contato conforme o Validator
+    const { login, senha, nome, email, contato, nivel_acesso, foto } = req.body;
+    
+    const data = { 
+      login, 
+      senha, 
+      nome, 
+      email, 
+      contato, 
+      nivel_acesso, 
+      foto 
+    };
+
     const usuario = await prisma.usuario.create({ data });
     return res.status(201).json({ success: true, data: usuario });
   } catch (error) {
@@ -39,30 +50,30 @@ export const create = async (req, res) => {
 export const update = async (req, res) => {
   try {
     const { id } = req.params;
-    const { login, senha, nome, nivel_acesso, foto } = req.body;
+    // Adicionados email e contato na desestruturação
+    const { login, senha, nome, email, contato, nivel_acesso, foto } = req.body;
+    
     const data = {};
     if (login !== undefined) data.login = login;
     if (senha !== undefined) data.senha = senha;
     if (nome !== undefined) data.nome = nome;
+    if (email !== undefined) data.email = email;
+    if (contato !== undefined) data.contato = contato;
     if (nivel_acesso !== undefined) data.nivel_acesso = nivel_acesso;
 
-    // Se uma nova foto foi enviada
     if (foto !== undefined) {
       const usuarioAtual = await prisma.usuario.findUnique({
         where: { id_usuario: Number(id) },
         select: { foto: true },
       });
 
-      // Só deleta a antiga se a URL MUDOU (ou seja, é uma foto nova mesmo)
       if (usuarioAtual?.foto && usuarioAtual.foto !== foto) {
         try {
           deleteFotoUsuario(usuarioAtual.foto);
         } catch (err) {
           console.warn(`⚠️ Não foi possível deletar foto antiga: ${err.message}`);
-          // Não impede a edição de continuar
         }
       }
-
       data.foto = foto;
     }
 
@@ -80,22 +91,19 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Busca o usuário antes de deletar para pegar a foto
     const usuario = await prisma.usuario.findUnique({
       where: { id_usuario: Number(id) },
-      select: { foto: true, nome: true },
+      select: { foto: true },
     });
 
     if (!usuario) {
       return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
     }
 
-    // Deleta a foto do disco se existir
     if (usuario.foto) {
       deleteFotoUsuario(usuario.foto);
     }
 
-    // Deleta o registro no banco
     await prisma.usuario.delete({ where: { id_usuario: Number(id) } });
 
     return res.json({ success: true, message: 'Usuário removido' });
@@ -108,9 +116,11 @@ export const login = async (req, res) => {
   try {
     const { login, senha } = req.body;
     const usuario = await prisma.usuario.findUnique({ where: { login } });
+    
     if (!usuario || usuario.senha !== senha) {
       return res.status(401).json({ success: false, error: 'Credenciais inválidas' });
     }
+    
     return res.json({ success: true, data: usuario });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });

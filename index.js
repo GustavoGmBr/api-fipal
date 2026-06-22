@@ -1,16 +1,46 @@
 import express from 'express';
 import cors from 'cors';
-import os from 'os'; // Módulo nativo, não caminho relativo
+import dotenv from 'dotenv';
+import os from 'os';
+import router from './routes/index.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3334;
-const host = '0.0.0.0'; // Escuta em todas as interfaces de rede
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Middlewares
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Função para obter o IP da rede local (primeiro IPv4 não interno)
+BigInt.prototype.toJSON = function () {
+  return this.toString();
+};
+
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    message: 'Setimo Elemento API is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.use('/api', router);
+app.use('/', router);
+
+app.use((req, res) => {
+  console.log(`⚠️ Rota não encontrada: ${req.method} ${req.url}`);
+  res.status(404).json({ error: `Rota ${req.method} ${req.url} não encontrada no servidor.` });
+});
+
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
   for (const name of Object.keys(interfaces)) {
@@ -20,31 +50,15 @@ function getLocalIP() {
       }
     }
   }
-  return '127.0.0.1'; // fallback
+  return 'localhost';
 }
 
-// Corrige serialização de BigInt para JSON (evita erro "BigInt não serializável")
-BigInt.prototype.toJSON = function () { return this.toString(); };
+const port = process.env.PORT || 3334;
+const host = '0.0.0.0';
 
-// Rotas
-app.get('/', (req, res) => {
-  res.send('Servidor Express funcionando!');
-});
-
-// Rota /api de exemplo
-app.get('/api', (req, res) => {
-  res.json({ message: 'API online', timestamp: new Date().toISOString() });
-});
-
-// Handler 404 para rotas não encontradas
-app.use((req, res) => {
-  res.status(404).json({ error: 'Rota não encontrada' });
-});
-
-// Inicia o servidor em todas as interfaces
 app.listen(port, host, () => {
   const localIP = getLocalIP();
-  console.log(`🚀 Servidor rodando em:`);
+  console.log(`🚀 Server running on:`);
   console.log(`   Local:    http://localhost:${port}`);
   console.log(`   Network:  http://${localIP}:${port}`);
 });

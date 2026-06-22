@@ -12,11 +12,16 @@ model Usuario {
   login            String   @unique
   senha            String
   nome             String?
+  email            String?
+  contato          String?
   foto             String?
   nivel_acesso     Int      @default(0)
   data_criacao     DateTime @default(now())
   usados_criados   Usado[]  @relation("Criador")
   usados_alterados Usado[]  @relation("Alterador")
+  
+  // ADICIONE ESTA LINHA ABAIXO:
+  jogo             Jogo?
 }
 
 model Usado {
@@ -54,6 +59,71 @@ model Usado {
   @@index([updated_by], map: "Usado_updated_by_fkey")
 }
 
+model Tradein {
+  id_tradein   Int      @id @default(autoincrement())
+  data_tradein DateTime @default(now()) //data qe foi realizada (ou dia atual)
+  cliente      String
+  codigo       Int //codigo do tradein (geralmente 6 digitos)
+  chassi       String   @unique //chassi do veiculo
+  valor        Decimal  @db.Decimal(10, 2)
+}
+
+model TestDrive {
+  id_testdrive Int      @id @default(autoincrement())
+  marca        String
+  modelo       String
+  ano          String
+  cor          String
+  placa        String   @unique
+  chassi       String   @unique
+  renavam      String
+  created_at   DateTime @default(now())
+}
+
+model Despesas {
+  id_despesa   Int      @id @default(autoincrement())
+  descricao    String?
+  prestador    String
+  valor        Decimal  @db.Decimal(10, 2)
+  setor        String
+  data_despesa DateTime
+}
+
+model Categoria_Pedido {
+  id_categoria   Int      @id @default(autoincrement())
+  cod_categoria  Int      @unique
+  desc_categoria String
+  pedidos        Pedido[]
+}
+
+model Pedido {
+  id_pedido      Int              @id @default(autoincrement())
+  dt_pedido      DateTime         @default(now())
+  cod_comercial  String
+  cliente        String
+  tipo_veiculo   String
+  vendedor       String
+  valor_pedido   Decimal          @db.Decimal(10, 2)
+  doc_b2b        String?
+  status         String           @default("Aberto")
+  dt_faturamento DateTime?
+  dias_pedido    Int              @default(0)
+  id_categoria   Int
+  pd_ativo       Int          @default(1)
+  categoria      Categoria_Pedido @relation(fields: [id_categoria], references: [id_categoria])
+}
+model Jogo {
+  id_jogo            Int     @id @default(autoincrement())
+  id_usuario         Int     @unique // Garante que cada usuário tenha apenas um registro de saldo/jogos
+  valor_moedas       Decimal @default(0.00) @db.Decimal(10, 2) // Valor atual de moedas
+  valor_total_ganho  Decimal @default(0.00) @db.Decimal(10, 2)
+  valor_total_perdido Decimal @default(0.00) @db.Decimal(10, 2)
+  vezes_resetadas    Int     @default(0)
+  
+  estatisticas_jogos Json
+
+  usuario            Usuario @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
+}
 enum Combustivel {
   GASOLINA
   ETANOL
