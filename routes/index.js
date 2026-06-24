@@ -6,6 +6,7 @@ import testDriveRouter from './testDrive.routes.js';
 import despesaRouter from './despesa.routes.js';
 import categoriaPedidoRouter from './categoria_pedido.routes.js';
 import pedidosRouter from './pedido.routes.js';
+import jogosRouter from './jogo.routes.js';
 
 import uploadRouter from './upload.js';
 import uploadVeiculoRouter from './uploadVeiculo.js';
@@ -20,6 +21,7 @@ router.use('/test-drives', testDriveRouter);
 router.use('/despesas', despesaRouter);
 router.use('/categoria_pedido', categoriaPedidoRouter);
 router.use('/pedidos', pedidosRouter);
+router.use('/jogos', jogosRouter);
 
 // Deixa os arquivos de upload organizados
 router.use('/upload', uploadRouter);

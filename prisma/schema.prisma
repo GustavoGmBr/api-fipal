@@ -124,6 +124,20 @@ model Jogo {
 
   usuario            Usuario @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
 }
+
+model Estoque {
+  id             Int      @id @default(autoincrement())
+  referencia     String   @unique
+  descricao      String   @db.Text
+  localizacao    String?
+  estoqueFisico  Int      @default(0)
+  estoqueSistema Int      @default(0)
+  
+  // Linhas adicionadas para controle de data:
+  created_at     DateTime @default(now()) // Registra quando o item foi criado
+  updated_at     DateTime @updatedAt      // Atualiza automaticamente a cada alteração
+}
+
 enum Combustivel {
   GASOLINA
   ETANOL

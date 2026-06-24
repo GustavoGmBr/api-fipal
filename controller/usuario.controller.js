@@ -27,20 +27,35 @@ export const readById = async (req, res) => {
 
 export const create = async (req, res) => {
   try {
-    // Adicionados email e contato conforme o Validator
     const { login, senha, nome, email, contato, nivel_acesso, foto } = req.body;
     
-    const data = { 
-      login, 
-      senha, 
-      nome, 
-      email, 
-      contato, 
-      nivel_acesso, 
-      foto 
-    };
+    // Modificado para incluir a criação do perfil de jogo acoplada
+    const usuario = await prisma.usuario.create({ 
+      data: { 
+        login, 
+        senha, 
+        nome, 
+        email, 
+        contato, 
+        nivel_acesso, 
+        foto,
+        // Cria automaticamente a carteira de jogos zerada para o novo usuário
+        jogo: {
+          create: {
+            valor_moedas: 100.00,
+            valor_total_ganho: 0.00,
+            valor_total_perdido: 0.00,
+            vezes_resetadas: 0,
+            estatisticas_jogos: [] // Inicializa o campo JSON como um array vazio
+          }
+        }
+      },
+      // Opcional: Inclui os dados do jogo recém-criado na resposta da API
+      include: {
+        jogo: true
+      }
+    });
 
-    const usuario = await prisma.usuario.create({ data });
     return res.status(201).json({ success: true, data: usuario });
   } catch (error) {
     return res.status(400).json({ success: false, error: error.message });
@@ -50,7 +65,6 @@ export const create = async (req, res) => {
 export const update = async (req, res) => {
   try {
     const { id } = req.params;
-    // Adicionados email e contato na desestruturação
     const { login, senha, nome, email, contato, nivel_acesso, foto } = req.body;
     
     const data = {};
