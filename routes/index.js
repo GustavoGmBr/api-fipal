@@ -7,6 +7,7 @@ import despesaRouter from './despesa.routes.js';
 import categoriaPedidoRouter from './categoria_pedido.routes.js';
 import pedidosRouter from './pedido.routes.js';
 import jogosRouter from './jogo.routes.js';
+import estoqueRouter from './estoque.routes.js';
 
 import uploadRouter from './upload.js';
 import uploadVeiculoRouter from './uploadVeiculo.js';
@@ -22,6 +23,7 @@ router.use('/despesas', despesaRouter);
 router.use('/categoria_pedido', categoriaPedidoRouter);
 router.use('/pedidos', pedidosRouter);
 router.use('/jogos', jogosRouter);
+router.use('/estoque', estoqueRouter);
 
 // Deixa os arquivos de upload organizados
 router.use('/upload', uploadRouter);
