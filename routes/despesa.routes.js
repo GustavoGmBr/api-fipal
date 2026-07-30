@@ -1,39 +1,33 @@
 import { Router } from 'express';
-import { 
-  create, 
-  readAll, 
-  readById, 
-  update, 
-  remove,
-  getTotalPeriodo,
-  getDayBasedComparison,
-  getQuarterlyReport,
-  getMonthlyHistory,
-  getSectorComparison,
-  getSimpleMonthlyComparison
-} from '../controller/despesa.controller.js';
+import * as controller from '../controller/despesa.controller.js';
 
 const router = Router();
 
-// --- Rotas Analíticas e Dashboards ---
-// (Devem vir antes das rotas com parâmetros dinâmicos :id para evitar conflitos)
+console.log('✅ Registrando rotas de despesas...');
 
-// Retorna o total consolidado de um mês (exigido pelo Hook para o card de mês anterior)
-router.get('/total-periodo', getTotalPeriodo);
+// ============================================
+// 1. ROTAS ANALÍTICAS DE DESPESAS
+// ============================================
+router.get('/total-periodo', controller.getTotalPeriodo);
+router.get('/comparativo-dia', controller.getDayBasedComparison);
+router.get('/relatorio-trimestral', controller.getQuarterlyReport);
+router.get('/despesas-mensais', controller.getMonthlyHistory);
 
-// Retorna o comparativo MTD - Month To Date (dia atual vs mesmo dia do mês anterior)
-router.get('/comparativo-dia', getDayBasedComparison);
+// ============================================
+// 2. CRUD - DESPESAS
+// ============================================
+router.post('/', controller.create);
+router.get('/', controller.readAll);
 
-router.get('/relatorio-trimestral', getQuarterlyReport);
-router.get('/despesas-mensais', getMonthlyHistory);
-router.get('/despesas-por-setor', getSectorComparison);
-router.get('/comparacao/mensal', getSimpleMonthlyComparison);
+// ============================================
+// 3. ROTAS COM PARÂMETROS (ORDEM CORRETA)
+// ============================================
 
-// --- CRUD Básico ---
-router.post('/', create);
-router.get('/', readAll);
-router.get('/:id', readById);
-router.put('/:id', update);
-router.delete('/:id', remove);
+// 🔥 Rota genérica: /despesas/:id (DEVE ser a ÚLTIMA com parâmetro)
+router.get('/:id', controller.readById);
+router.put('/:id', controller.update);
+router.delete('/:id', controller.remove);
+
+console.log('✅ Todas as rotas de despesas registradas!');
 
 export default router;

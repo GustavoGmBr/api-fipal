@@ -12,16 +12,14 @@ model Usuario {
   login            String   @unique
   senha            String
   nome             String?
-  email            String?
-  contato          String?
   foto             String?
   nivel_acesso     Int      @default(0)
   data_criacao     DateTime @default(now())
+  contato          String?
+  email            String?
+  jogo             Jogo?
   usados_criados   Usado[]  @relation("Criador")
   usados_alterados Usado[]  @relation("Alterador")
-  
-  // ADICIONE ESTA LINHA ABAIXO:
-  jogo             Jogo?
 }
 
 model Usado {
@@ -61,10 +59,10 @@ model Usado {
 
 model Tradein {
   id_tradein   Int      @id @default(autoincrement())
-  data_tradein DateTime @default(now()) //data qe foi realizada (ou dia atual)
+  data_tradein DateTime @default(now())
   cliente      String
-  codigo       Int //codigo do tradein (geralmente 6 digitos)
-  chassi       String   @unique //chassi do veiculo
+  codigo       Int
+  chassi       String   @unique
   valor        Decimal  @db.Decimal(10, 2)
 }
 
@@ -85,8 +83,20 @@ model Despesas {
   descricao    String?
   prestador    String
   valor        Decimal  @db.Decimal(10, 2)
-  setor        String
-  data_despesa DateTime
+  data_despesa DateTime @default(now())
+  rateios      Rateio[]
+}
+
+model Rateio {
+  id_rateio  Int      @id @default(autoincrement())
+  id_despesa Int
+  setor      String
+  valor      Decimal  @db.Decimal(10, 2)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  despesa    Despesas @relation(fields: [id_despesa], references: [id_despesa], onDelete: Cascade)
+
+  @@index([id_despesa], map: "Rateio_id_despesa_fkey")
 }
 
 model Categoria_Pedido {
@@ -109,20 +119,21 @@ model Pedido {
   dt_faturamento DateTime?
   dias_pedido    Int              @default(0)
   id_categoria   Int
-  pd_ativo       Int          @default(1)
+  pd_ativo       Int              @default(1)
   categoria      Categoria_Pedido @relation(fields: [id_categoria], references: [id_categoria])
-}
-model Jogo {
-  id_jogo            Int     @id @default(autoincrement())
-  id_usuario         Int     @unique // Garante que cada usuário tenha apenas um registro de saldo/jogos
-  valor_moedas       Decimal @default(0.00) @db.Decimal(10, 2) // Valor atual de moedas
-  valor_total_ganho  Decimal @default(0.00) @db.Decimal(10, 2)
-  valor_total_perdido Decimal @default(0.00) @db.Decimal(10, 2)
-  vezes_resetadas    Int     @default(0)
-  
-  estatisticas_jogos Json
 
-  usuario            Usuario @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
+  @@index([id_categoria], map: "Pedido_id_categoria_fkey")
+}
+
+model Jogo {
+  id_jogo             Int     @id @default(autoincrement())
+  id_usuario          Int     @unique
+  valor_moedas        Decimal @default(0.00) @db.Decimal(10, 2)
+  valor_total_ganho   Decimal @default(0.00) @db.Decimal(10, 2)
+  valor_total_perdido Decimal @default(0.00) @db.Decimal(10, 2)
+  vezes_resetadas     Int     @default(0)
+  estatisticas_jogos  Json
+  usuario             Usuario @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
 }
 
 model Estoque {
@@ -132,10 +143,8 @@ model Estoque {
   localizacao    String?
   estoqueFisico  Int      @default(0)
   estoqueSistema Int      @default(0)
-  
-  // Linhas adicionadas para controle de data:
-  created_at     DateTime @default(now()) // Registra quando o item foi criado
-  updated_at     DateTime @updatedAt      // Atualiza automaticamente a cada alteração
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
 }
 
 enum Combustivel {

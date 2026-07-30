@@ -4,9 +4,9 @@ import prisma from '../lib/prisma.js';
 
 export const readAll = async (req, res) => {
   try {
-    const { 
+    const {
       referencia, descricao, localizacao, comDivergencia,
-      dataInicio, dataFim 
+      dataInicio, dataFim
     } = req.query;
 
     const where = {};
@@ -64,8 +64,8 @@ export const readById = async (req, res) => {
 
 export const create = async (req, res) => {
   try {
-    const { 
-      referencia, descricao, localizacao, estoqueFisico, estoqueSistema 
+    const {
+      referencia, descricao, localizacao, estoqueFisico, estoqueSistema
     } = req.body;
 
     const item = await prisma.estoque.create({
@@ -87,8 +87,8 @@ export const create = async (req, res) => {
 export const update = async (req, res) => {
   try {
     const { id } = req.params;
-    const { 
-      referencia, descricao, localizacao, estoqueFisico, estoqueSistema 
+    const {
+      referencia, descricao, localizacao, estoqueFisico, estoqueSistema
     } = req.body;
 
     const data = {};
@@ -132,16 +132,50 @@ export const sincronizarEstoque = async (req, res) => {
       }
     });
 
-    return res.json({ 
-      success: true, 
-      message: 'Estoque do sistema sincronizado com o físico com sucesso', 
-      data: itemAtualizado 
+    return res.json({
+      success: true,
+      message: 'Estoque do sistema sincronizado com o físico com sucesso',
+      data: itemAtualizado
     });
   } catch (error) {
     return res.status(400).json({ success: false, error: error.message });
   }
 };
+// --- LISTAR LOCAÇÕES DISPONÍVEIS ---
 
+export const getLocacoes = async (req, res) => {
+  try {
+    // Busca todas as localizações distintas do banco de dados
+    const locacoes = await prisma.estoque.findMany({
+      select: {
+        localizacao: true
+      },
+      where: {
+        localizacao: {
+          not: null // Exclui registros com localização nula
+        }
+      },
+      distinct: ['localizacao'],
+      orderBy: {
+        localizacao: 'asc'
+      }
+    });
+
+    // Extrai apenas os valores das localizações
+    const locacoesList = locacoes.map(item => item.localizacao);
+
+    return res.json({
+      success: true,
+      data: locacoesList
+    });
+  } catch (error) {
+    console.error('Erro ao buscar locações:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
 // Exclusão física (já que estoque geralmente não usa soft delete como pedidos)
 export const remove = async (req, res) => {
   try {

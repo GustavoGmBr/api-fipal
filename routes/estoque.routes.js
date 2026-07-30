@@ -1,12 +1,13 @@
 import { Router } from 'express';
-import { 
-  create, 
-  readAll, 
-  readById, 
-  update, 
-  sincronizarEstoque, 
-  getReport, 
-  remove 
+import {
+  create,
+  readAll,
+  readById,
+  update,
+  sincronizarEstoque,
+  getReport,
+  getLocacoes,
+  remove
 } from '../controller/estoque.controller.js'; // Ajuste o caminho conforme sua estrutura
 
 const router = Router();
@@ -14,6 +15,7 @@ const router = Router();
 // --- ROTAS DE RELATÓRIO / DASHBOARD ---
 // Nota: Deixamos acima das rotas com ':id' para o Express não confundir a palavra 'report' com um ID numérico.
 router.get('/report', getReport);
+router.get('/locacoes', getLocacoes);
 
 // --- CRUD PADRÃO ---
 router.post('/', create);
